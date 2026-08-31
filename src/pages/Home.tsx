@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import SEO from '../components/SEO';
+import BookingCalendar from '../components/BookingCalendar';
+import EventCard from '../components/EventCard';
+import EventRegistrationModal from '../components/EventRegistrationModal';
+import { eventsList, type EventItem } from '../data/events';
 
 /* ── Data ────────────────────────────────────────────────────────── */
 
@@ -29,7 +34,7 @@ const vmCards = [
         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
       </svg>
     ),
-    text: "To help organisations across Africa build the people, systems and cultures that turn everyday work into meaningful growth for employees and businesses alike.",
+    text: 'To help organisations across Africa build the people, systems and cultures that turn everyday work into meaningful growth for employees and businesses alike.',
   },
   {
     title: 'Target',
@@ -81,11 +86,12 @@ const faqs = [
 export default function Home() {
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [showAllFaqs, setShowAllFaqs] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
   const VISIBLE_FAQS = 3;
 
   // Scroll-triggered fade-in for legacy elements
   useEffect(() => {
-    const ids = ['services', 'about', 'testimonials', 'contact'];
+    const ids = ['services', 'about', 'events', 'testimonials', 'contact'];
     const handleAnchor = () => {
       const hash = window.location.hash.slice(1);
       if (ids.includes(hash)) {
@@ -117,29 +123,42 @@ export default function Home() {
           />
         </div>
         <div className="absolute inset-0 bg-gradient-to-br from-deep-green/92 via-deep-green/75 to-brand-green/60 z-[1]" />
-        <div className="relative z-[2] max-w-[1200px] mx-auto px-6 pt-[140px] pb-[100px]">
+        <div className="relative z-[2] max-w-[1200px] mx-auto px-6 pt-[150px] pb-[100px]">
           <AnimateOnScroll delay={0.1}>
-            <h1 className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.1] mb-6 max-w-[750px]"
-              style={{ fontSize: 'clamp(2.8rem, 6vw, 4.8rem)' }}>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-mint text-xs font-semibold uppercase tracking-wider mb-6 backdrop-blur-sm">
+              HR &bull; Organizational Architecture &bull; Pan-African Growth
+            </div>
+            <h1
+              className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.1] mb-6 max-w-[780px]"
+              style={{ fontSize: 'clamp(2.8rem, 6vw, 4.8rem)' }}
+            >
               Build the People Systems<br />Behind <span className="text-mint">Every Growing Business.</span>
             </h1>
           </AnimateOnScroll>
 
           <AnimateOnScroll delay={0.2}>
-            <p className="font-[family-name:var(--font-body)] text-white/80 max-w-[540px] leading-relaxed mb-10"
-              style={{ fontSize: 'clamp(1rem, 1.8vw, 1.2rem)' }}>
+            <p
+              className="font-[family-name:var(--font-body)] text-white/80 max-w-[560px] leading-relaxed mb-10"
+              style={{ fontSize: 'clamp(1rem, 1.8vw, 1.2rem)' }}
+            >
               We are the partner that growing businesses call when they have outgrown informal people management but do not yet have the systems to match their ambition. Structured, practical HR built for the realities of the continent.
             </p>
           </AnimateOnScroll>
 
           <AnimateOnScroll delay={0.3}>
             <div className="flex flex-wrap gap-4">
-              <a href="#contact" className="inline-flex items-center gap-2 px-9 py-4 bg-brand-green text-white font-[family-name:var(--font-body)] font-semibold rounded-full hover:bg-terracotta transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(196,119,59,0.3)]">
-                Book a Free Consultation →
+              <a
+                href="#contact"
+                className="inline-flex items-center gap-2 px-9 py-4 bg-brand-green text-white font-[family-name:var(--font-body)] font-semibold rounded-full hover:bg-terracotta transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(196,119,59,0.3)]"
+              >
+                Schedule Consultation →
               </a>
-              <a href="#about" className="inline-flex items-center gap-2 px-9 py-4 bg-transparent text-white font-[family-name:var(--font-body)] font-semibold rounded-full border-2 border-white/30 hover:border-white hover:bg-white/8 transition-all duration-300">
-                Learn Our Approach
-              </a>
+              <Link
+                to="/events"
+                className="inline-flex items-center gap-2 px-9 py-4 bg-transparent text-white font-[family-name:var(--font-body)] font-semibold rounded-full border-2 border-white/30 hover:border-white hover:bg-white/10 transition-all duration-300"
+              >
+                Explore Webinars &amp; Mentorships
+              </Link>
             </div>
           </AnimateOnScroll>
         </div>
@@ -151,8 +170,10 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-8 text-center">
             {stats.map((s, i) => (
               <AnimateOnScroll key={i} delay={i * 0.1} className="relative">
-                <div className="font-[family-name:var(--font-heading)] font-bold text-deep-green leading-none mb-2"
-                  style={{ fontSize: 'clamp(2.2rem, 4vw, 3.2rem)' }}>
+                <div
+                  className="font-[family-name:var(--font-heading)] font-bold text-deep-green leading-none mb-2"
+                  style={{ fontSize: 'clamp(2.2rem, 4vw, 3.2rem)' }}
+                >
                   {s.number.includes('+') ? (
                     <>{s.number.replace('+', '')}<span className="text-terracotta">+</span></>
                   ) : s.number}
@@ -174,8 +195,10 @@ export default function Home() {
         <div className="max-w-[1200px] mx-auto px-6">
           <AnimateOnScroll className="text-center mb-[60px]">
             <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">Who We Are</p>
-            <h2 className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+            <h2
+              className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+            >
               Purpose-Driven. People-Focused.<br />Built for Africa.
             </h2>
             <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
@@ -186,7 +209,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
             {vmCards.map((card, i) => (
               <AnimateOnScroll key={i} delay={i * 0.1}>
-                <div className="bg-white rounded-[20px] p-11 shadow-card hover:-translate-y-1 hover:shadow-card-hover transition-all duration-300">
+                <div className="bg-white rounded-[20px] p-11 shadow-card hover:-translate-y-1 hover:shadow-card-hover transition-all duration-300 border border-charcoal/5">
                   <div className="w-14 h-14 rounded-full bg-mint flex items-center justify-center mb-6">{card.icon}</div>
                   <h3 className="font-[family-name:var(--font-heading)] text-[1.4rem] font-semibold text-charcoal mb-3.5">{card.title}</h3>
                   <p className="font-[family-name:var(--font-body)] text-[0.95rem] text-charcoal/65 leading-relaxed">{card.text}</p>
@@ -202,8 +225,10 @@ export default function Home() {
         <div className="max-w-[1200px] mx-auto px-6">
           <AnimateOnScroll className="text-center mb-12">
             <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">What We Do</p>
-            <h2 className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+            <h2
+              className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+            >
               15 Specialised HR<br />Service Areas
             </h2>
             <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
@@ -214,7 +239,7 @@ export default function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
             {specialties.map((sp, i) => (
               <AnimateOnScroll key={i} delay={Math.min(i * 0.04, 0.4)}>
-                <div className="bg-white rounded-[14px] p-5 text-center shadow-card hover:-translate-y-[3px] hover:shadow-card-hover transition-all duration-300">
+                <div className="bg-white rounded-[14px] p-5 text-center shadow-card hover:-translate-y-[3px] hover:shadow-card-hover transition-all duration-300 border border-charcoal/5">
                   <div className="w-10 h-10 rounded-full bg-mint flex items-center justify-center mx-auto mb-3">{sp.icon}</div>
                   <h4 className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold text-charcoal leading-snug">{sp.name}</h4>
                 </div>
@@ -224,25 +249,67 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Upcoming Events & Mentorship Sessions ──────── */}
+      <section className="relative py-[100px] bg-white overflow-hidden" id="events">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+            <AnimateOnScroll>
+              <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">
+                Events &amp; Programs
+              </p>
+              <h2
+                className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15]"
+                style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+              >
+                Upcoming Webinars &amp;<br />Mentorship Cohorts
+              </h2>
+            </AnimateOnScroll>
+
+            <AnimateOnScroll delay={0.1}>
+              <Link
+                to="/events"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-cream text-charcoal font-[family-name:var(--font-body)] text-xs md:text-sm font-semibold rounded-full hover:bg-deep-green hover:text-white transition-all duration-300 border border-charcoal/10"
+              >
+                View Full Events Schedule →
+              </Link>
+            </AnimateOnScroll>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
+            {eventsList.slice(0, 3).map((event) => (
+              <AnimateOnScroll key={event.id}>
+                <EventCard
+                  event={event}
+                  featured={event.featured}
+                  onRegister={(ev) => setSelectedEvent(ev)}
+                />
+              </AnimateOnScroll>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Values ─────────────────────────────────────── */}
-      <section className="relative py-[100px] bg-cream overflow-hidden">
+      <section className="relative py-[100px] bg-cream/60 overflow-hidden">
         <div className="max-w-[1200px] mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
             <AnimateOnScroll className="md:sticky md:top-[120px]">
               <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">Our Values</p>
-              <h2 className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
-                style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+              <h2
+                className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
+                style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+              >
                 What Guides<br />Every Decision
               </h2>
               <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 leading-relaxed">
-                These aren't words on a wall. They're the principles that shape every recommendation, every workshop, and every conversation we have with our clients.
+                These aren&apos;t words on a wall. They&apos;re the principles that shape every recommendation, every workshop, and every conversation we have with our clients.
               </p>
             </AnimateOnScroll>
 
             <div className="flex flex-col gap-4">
               {values.map((v, i) => (
                 <AnimateOnScroll key={i} delay={i * 0.08} direction="right">
-                  <div className="flex items-start gap-5 bg-white rounded-[14px] p-7 shadow-card hover:translate-x-1 hover:shadow-card-hover transition-all duration-300">
+                  <div className="flex items-start gap-5 bg-white rounded-[14px] p-7 shadow-card hover:translate-x-1 hover:shadow-card-hover transition-all duration-300 border border-charcoal/5">
                     <span className="font-[family-name:var(--font-heading)] text-[1.5rem] font-bold text-terracotta leading-none min-w-[36px] pt-0.5">{v.num}</span>
                     <div>
                       <h4 className="font-[family-name:var(--font-heading)] text-[1.15rem] font-semibold text-charcoal mb-1.5">{v.title}</h4>
@@ -257,28 +324,44 @@ export default function Home() {
       </section>
 
       {/* ── Testimonials ───────────────────────────────── */}
-      <section className="relative py-[100px] overflow-hidden" id="testimonials">
+      <section className="relative py-[100px] bg-white overflow-hidden" id="testimonials">
         <div className="max-w-[1200px] mx-auto px-6">
           <AnimateOnScroll className="text-center mb-12">
             <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">Client Stories</p>
-            <h2 className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+            <h2
+              className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+            >
               Trusted by Growing<br />African Businesses
             </h2>
             <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
-              Hear from the leaders who've transformed their people practices with our support.
+              Hear from the leaders who&apos;ve transformed their people practices with our support.
             </p>
           </AnimateOnScroll>
 
-          <div className="text-center py-20 px-8">
-            <div className="text-5xl mb-5">💬</div>
-            <p className="font-[family-name:var(--font-heading)] font-semibold text-charcoal mb-3"
-              style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)' }}>
+          {/* Premium quote box replacing emoji */}
+          <div className="text-center py-16 px-8 max-w-xl mx-auto bg-cream/30 rounded-[24px] border border-charcoal/10">
+            <div className="w-12 h-12 rounded-full bg-mint text-deep-green flex items-center justify-center mx-auto mb-4 border border-brand-green/30">
+              <svg className="w-6 h-6 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24">
+                <path d="M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 0 4-1.5 6-3 6" />
+                <path d="M15 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2 0 4-1.5 6-3 6" />
+              </svg>
+            </div>
+            <p
+              className="font-[family-name:var(--font-heading)] font-semibold text-charcoal mb-3"
+              style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)' }}
+            >
               We are waiting for your success story
             </p>
-            <p className="font-[family-name:var(--font-body)] text-base text-charcoal/55 max-w-[420px] mx-auto">
-              Work with us and let your transformation become the next chapter we share here.
+            <p className="font-[family-name:var(--font-body)] text-sm md:text-base text-charcoal/60 leading-relaxed mb-6">
+              Partner with us and let your organizational transformation become the next benchmark of African enterprise excellence.
             </p>
+            <a
+              href="#contact"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-deep-green text-white text-xs font-semibold rounded-full hover:bg-brand-green transition-all"
+            >
+              Start Your Transformation
+            </a>
           </div>
         </div>
       </section>
@@ -288,8 +371,10 @@ export default function Home() {
         <div className="max-w-[1200px] mx-auto px-6">
           <AnimateOnScroll className="text-center mb-12">
             <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">Your Questions, Answered</p>
-            <h2 className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+            <h2
+              className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+            >
               Frequently Asked Questions
             </h2>
             <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
@@ -336,29 +421,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── CTA Banner ─────────────────────────────────── */}
-      <section className="relative bg-deep-green py-[100px] text-center overflow-hidden" id="contact">
-        <div className="absolute top-[-60px] right-[-60px] w-[300px] h-[300px] rounded-full bg-terracotta/10" />
-        <div className="absolute bottom-[-40px] left-[-40px] w-[200px] h-[200px] rounded-full bg-brand-green/10" />
-        <div className="relative z-[1] max-w-[1200px] mx-auto px-6">
-          <AnimateOnScroll>
-            <h2 className="font-[family-name:var(--font-heading)] font-semibold text-white mb-4 max-w-[650px] mx-auto"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
-              Ready to Build the People Engine<br />of Your Growth?
+      {/* ── Interactive Booking Calendar & Contact Section ─ */}
+      <section className="relative bg-cream/70 py-[100px] overflow-hidden" id="contact">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <AnimateOnScroll className="text-center mb-12">
+            <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">
+              Direct Engagement &bull; No Obligation
+            </p>
+            <h2
+              className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
+              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+            >
+              Ready to Build Your People Engine?
             </h2>
-          </AnimateOnScroll>
-          <AnimateOnScroll delay={0.1}>
-            <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-white/75 mb-9 max-w-[500px] mx-auto">
-              Let's talk about where your people systems stand today, and where they need to be. First consultation is always free.
+            <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
+              Select an available appointment on our calendar or drop us a note. First consultation is always free.
             </p>
           </AnimateOnScroll>
-          <AnimateOnScroll delay={0.2}>
-            <a href="mailto:hello@peoplegrowthafrica.com" className="inline-flex items-center gap-2 px-9 py-4 bg-terracotta text-white font-[family-name:var(--font-body)] font-semibold rounded-full hover:bg-brand-green transition-all duration-300 hover:-translate-y-0.5">
-              Book Your Free Consultation →
-            </a>
+
+          {/* Interactive Booking Calendar Component */}
+          <AnimateOnScroll delay={0.1}>
+            <BookingCalendar />
           </AnimateOnScroll>
         </div>
       </section>
+
+      {/* Registration Modal for Featured Events */}
+      <EventRegistrationModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+      />
     </>
   );
 }

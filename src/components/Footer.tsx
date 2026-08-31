@@ -20,7 +20,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-12 mb-12">
           <div>
             <Link to="/" className="inline-block mb-4">
-              <img src="/images/logo-white.png" alt="People Growth Africa" className="h-[120px] w-auto object-contain" />
+              <img
+                src="/images/logo-white.png"
+                alt="People Growth Africa"
+                className="h-16 md:h-20 w-auto object-contain"
+              />
             </Link>
             <p className="font-[family-name:var(--font-heading)] text-lg font-medium text-white mb-3">
               People first. Growth always.
@@ -41,17 +45,17 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-5 font-[family-name:var(--font-body)]">Company</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-5 font-[family-name:var(--font-body)]">Programs &amp; Insights</h4>
             <ul className="flex flex-col gap-3">
-              <li><a href="/#about" onClick={(e) => handleAnchorClick(e, '/#about')} className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">About Us</a></li>
-              <li><Link to="/blog" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Blog</Link></li>
-              <li><a href="/#testimonials" onClick={(e) => handleAnchorClick(e, '/#testimonials')} className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Client Stories</a></li>
-              <li><a href="/#contact" onClick={(e) => handleAnchorClick(e, '/#contact')} className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Contact</a></li>
+              <li><Link to="/events" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Events &amp; Webinars</Link></li>
+              <li><Link to="/events" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Mentorship Cohorts</Link></li>
+              <li><Link to="/blog" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Knowledge Base / Blog</Link></li>
+              <li><a href="/#about" onClick={(e) => handleAnchorClick(e, '/#about')} className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">About PGA</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-5 font-[family-name:var(--font-body)]">Contact</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-5 font-[family-name:var(--font-body)]">Contact &amp; Hours</h4>
             <ul className="flex flex-col gap-3">
               <li>
                 <a href="mailto:hello@peoplegrowthafrica.com" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">
@@ -62,6 +66,14 @@ export default function Footer() {
                 <a href="tel:+2349167114560" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">
                   +234 916 711 4560
                 </a>
+              </li>
+              <li>
+                <span className="text-[0.85rem] text-white/50 block">
+                  Mon &ndash; Fri: 8:00 AM &ndash; 6:00 PM WAT
+                </span>
+                <span className="text-[0.85rem] text-white/50 block">
+                  Sat: 11:00 AM &ndash; 4:00 PM WAT
+                </span>
               </li>
               <li>
                 <span className="text-[0.9rem] text-white/60">Apapa, Lagos, Nigeria</span>
