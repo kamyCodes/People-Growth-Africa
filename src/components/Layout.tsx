@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import ConsultationModal from './ConsultationModal';
+import WhatsAppConcierge from './WhatsAppConcierge';
+import { ConsultationProvider } from '../context/ConsultationContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -16,10 +19,14 @@ export default function Layout({ children }: LayoutProps) {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
+    <ConsultationProvider>
+      <div className="min-h-screen flex flex-col relative">
+        <Navbar />
+        <main className="flex-1">{children}</main>
+        <Footer />
+        <ConsultationModal />
+        <WhatsAppConcierge />
+      </div>
+    </ConsultationProvider>
   );
 }

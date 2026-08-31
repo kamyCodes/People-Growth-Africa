@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import SEO from '../components/SEO';
-import BookingCalendar from '../components/BookingCalendar';
-import EventCard from '../components/EventCard';
+import EventsCarousel from '../components/EventsCarousel';
 import EventRegistrationModal from '../components/EventRegistrationModal';
+import ServiceDetailModal from '../components/ServiceDetailModal';
 import { eventsList, type EventItem } from '../data/events';
+import { servicesData, type ServiceDetail } from '../data/services';
+import { useConsultation } from '../hooks/useConsultation';
 
 /* ── Data ────────────────────────────────────────────────────────── */
 
@@ -87,6 +89,8 @@ export default function Home() {
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
   const [showAllFaqs, setShowAllFaqs] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [selectedServiceDetail, setSelectedServiceDetail] = useState<ServiceDetail | null>(null);
+  const { openConsultation } = useConsultation();
   const VISIBLE_FAQS = 3;
 
   // Scroll-triggered fade-in for legacy elements
@@ -125,9 +129,6 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-br from-deep-green/92 via-deep-green/75 to-brand-green/60 z-[1]" />
         <div className="relative z-[2] max-w-[1200px] mx-auto px-6 pt-[150px] pb-[100px]">
           <AnimateOnScroll delay={0.1}>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 text-mint text-xs font-semibold uppercase tracking-wider mb-6 backdrop-blur-sm">
-              HR &bull; Organizational Architecture &bull; Pan-African Growth
-            </div>
             <h1
               className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.1] mb-6 max-w-[780px]"
               style={{ fontSize: 'clamp(2.8rem, 6vw, 4.8rem)' }}
@@ -147,12 +148,13 @@ export default function Home() {
 
           <AnimateOnScroll delay={0.3}>
             <div className="flex flex-wrap gap-4">
-              <a
-                href="#contact"
-                className="inline-flex items-center gap-2 px-9 py-4 bg-brand-green text-white font-[family-name:var(--font-body)] font-semibold rounded-full hover:bg-terracotta transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(196,119,59,0.3)]"
+              <button
+                type="button"
+                onClick={() => openConsultation()}
+                className="inline-flex items-center gap-2 px-9 py-4 bg-brand-green text-white font-[family-name:var(--font-body)] font-semibold rounded-full hover:bg-terracotta transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(196,119,59,0.3)] cursor-pointer"
               >
                 Schedule Consultation →
-              </a>
+              </button>
               <Link
                 to="/events"
                 className="inline-flex items-center gap-2 px-9 py-4 bg-transparent text-white font-[family-name:var(--font-body)] font-semibold rounded-full border-2 border-white/30 hover:border-white hover:bg-white/10 transition-all duration-300"
@@ -232,27 +234,41 @@ export default function Home() {
               15 Specialised HR<br />Service Areas
             </h2>
             <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
-              From strategy to implementation, we cover every dimension of people management that growing African businesses need.
+              Click any specialized service area below to review deliverables, timelines, target organization profiles, and strategic business outcomes.
             </p>
           </AnimateOnScroll>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-            {specialties.map((sp, i) => (
-              <AnimateOnScroll key={i} delay={Math.min(i * 0.04, 0.4)}>
-                <div className="bg-white rounded-[14px] p-5 text-center shadow-card hover:-translate-y-[3px] hover:shadow-card-hover transition-all duration-300 border border-charcoal/5">
-                  <div className="w-10 h-10 rounded-full bg-mint flex items-center justify-center mx-auto mb-3">{sp.icon}</div>
-                  <h4 className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold text-charcoal leading-snug">{sp.name}</h4>
-                </div>
-              </AnimateOnScroll>
-            ))}
+            {specialties.map((sp, i) => {
+              const detail = servicesData.find((s) => s.name === sp.name);
+              return (
+                <AnimateOnScroll key={i} delay={Math.min(i * 0.04, 0.4)}>
+                  <button
+                    type="button"
+                    onClick={() => detail && setSelectedServiceDetail(detail)}
+                    className="w-full bg-white rounded-[14px] p-5 text-center shadow-card hover:-translate-y-[4px] hover:shadow-card-hover transition-all duration-300 border border-charcoal/5 cursor-pointer group flex flex-col items-center justify-between min-h-[140px]"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-mint group-hover:bg-brand-green/20 flex items-center justify-center mx-auto mb-2.5 transition-colors">
+                      {sp.icon}
+                    </div>
+                    <h4 className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold text-charcoal leading-snug group-hover:text-deep-green transition-colors">
+                      {sp.name}
+                    </h4>
+                    <span className="text-[0.65rem] text-brand-green font-semibold mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      View Details →
+                    </span>
+                  </button>
+                </AnimateOnScroll>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── Upcoming Events & Mentorship Sessions ──────── */}
+      {/* ── Upcoming Events & Mentorship Sessions (Carousel) ── */}
       <section className="relative py-[100px] bg-white overflow-hidden" id="events">
         <div className="max-w-[1200px] mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
             <AnimateOnScroll>
               <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">
                 Events &amp; Programs
@@ -275,17 +291,13 @@ export default function Home() {
             </AnimateOnScroll>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
-            {eventsList.slice(0, 3).map((event) => (
-              <AnimateOnScroll key={event.id}>
-                <EventCard
-                  event={event}
-                  featured={event.featured}
-                  onRegister={(ev) => setSelectedEvent(ev)}
-                />
-              </AnimateOnScroll>
-            ))}
-          </div>
+          {/* Interactive Card Carousel */}
+          <AnimateOnScroll delay={0.15}>
+            <EventsCarousel
+              events={eventsList}
+              onRegister={(ev) => setSelectedEvent(ev)}
+            />
+          </AnimateOnScroll>
         </div>
       </section>
 
@@ -339,7 +351,7 @@ export default function Home() {
             </p>
           </AnimateOnScroll>
 
-          {/* Premium quote box replacing emoji */}
+          {/* Premium quote box */}
           <div className="text-center py-16 px-8 max-w-xl mx-auto bg-cream/30 rounded-[24px] border border-charcoal/10">
             <div className="w-12 h-12 rounded-full bg-mint text-deep-green flex items-center justify-center mx-auto mb-4 border border-brand-green/30">
               <svg className="w-6 h-6 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24">
@@ -356,12 +368,13 @@ export default function Home() {
             <p className="font-[family-name:var(--font-body)] text-sm md:text-base text-charcoal/60 leading-relaxed mb-6">
               Partner with us and let your organizational transformation become the next benchmark of African enterprise excellence.
             </p>
-            <a
-              href="#contact"
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-deep-green text-white text-xs font-semibold rounded-full hover:bg-brand-green transition-all"
+            <button
+              type="button"
+              onClick={() => openConsultation()}
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-deep-green text-white text-xs font-semibold rounded-full hover:bg-brand-green transition-all cursor-pointer"
             >
               Start Your Transformation
-            </a>
+            </button>
           </div>
         </div>
       </section>
@@ -421,30 +434,69 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Interactive Booking Calendar & Contact Section ─ */}
-      <section className="relative bg-cream/70 py-[100px] overflow-hidden" id="contact">
-        <div className="max-w-[1200px] mx-auto px-6">
-          <AnimateOnScroll className="text-center mb-12">
-            <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">
-              Direct Engagement &bull; No Obligation
-            </p>
+      {/* ── Executive Strategic Partnership CTA (Modal Trigger) ─ */}
+      <section className="relative bg-deep-green py-[110px] text-white text-center overflow-hidden" id="contact">
+        <div className="absolute top-[-80px] right-[-80px] w-96 h-96 rounded-full bg-brand-green/20 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-[-80px] left-[-80px] w-80 h-80 rounded-full bg-terracotta/20 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 max-w-[1200px] mx-auto px-6">
+          <AnimateOnScroll>
+            <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-mint text-xs font-semibold uppercase tracking-wider mb-4 backdrop-blur-sm">
+              Complimentary Strategic Diagnostic &bull; 30-Minute Session
+            </span>
             <h2
-              className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15] mb-4"
-              style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}
+              className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.15] mb-5 max-w-[760px] mx-auto"
+              style={{ fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)' }}
             >
-              Ready to Build Your People Engine?
+              Ready to Build the People Engine<br />of Your Growth?
             </h2>
-            <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
-              Select an available appointment on our calendar or drop us a note. First consultation is always free.
-            </p>
           </AnimateOnScroll>
 
-          {/* Interactive Booking Calendar Component */}
           <AnimateOnScroll delay={0.1}>
-            <BookingCalendar />
+            <p className="font-[family-name:var(--font-body)] text-white/80 text-base md:text-lg max-w-[620px] mx-auto leading-relaxed mb-8">
+              Let&apos;s discuss where your people systems stand today and where they need to be. Schedule a free diagnostic on our interactive calendar or chat directly with an advisor on WhatsApp.
+            </p>
+
+            {/* Operating Hours Summary */}
+            <div className="inline-flex flex-wrap items-center justify-center gap-4 py-2 px-5 rounded-full bg-white/8 text-xs text-white/90 font-medium mb-10 border border-white/10">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-brand-green" />
+                <span>Mon &ndash; Fri: <strong>8:00 AM &ndash; 6:00 PM WAT</strong></span>
+              </div>
+              <span className="text-white/30 hidden sm:inline">&bull;</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-terracotta" />
+                <span>Sat: <strong>11:00 AM &ndash; 4:00 PM WAT</strong></span>
+              </div>
+            </div>
+          </AnimateOnScroll>
+
+          <AnimateOnScroll delay={0.2}>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => openConsultation()}
+                className="inline-flex items-center gap-2 px-9 py-4 bg-terracotta text-white font-[family-name:var(--font-body)] text-sm font-semibold rounded-full hover:bg-brand-green transition-all duration-300 hover:-translate-y-0.5 shadow-lg cursor-pointer"
+              >
+                Schedule Free Consultation →
+              </button>
+              <Link
+                to="/consultation"
+                className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white font-[family-name:var(--font-body)] text-sm font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300"
+              >
+                Open Full Page Booking Form
+              </Link>
+            </div>
           </AnimateOnScroll>
         </div>
       </section>
+
+      {/* Service Detail Modal (Item 3) */}
+      <ServiceDetailModal
+        service={selectedServiceDetail}
+        onClose={() => setSelectedServiceDetail(null)}
+        onBookConsultation={(serviceName) => openConsultation(serviceName)}
+      />
 
       {/* Registration Modal for Featured Events */}
       <EventRegistrationModal

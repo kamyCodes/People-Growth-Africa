@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useConsultation } from '../hooks/useConsultation';
 
 const baseNavLinks = [
   { to: '/#services', label: 'Services' },
@@ -15,6 +16,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { openConsultation } = useConsultation();
 
   const isHome = location.pathname === '/';
 
@@ -118,7 +120,7 @@ export default function Navbar() {
           )}
           <button
             type="button"
-            onClick={() => handleNavClick('/#contact')}
+            onClick={() => openConsultation()}
             className="inline-flex items-center px-6 py-2.5 bg-brand-green text-white font-[family-name:var(--font-body)] text-sm font-semibold rounded-full hover:bg-terracotta transition-all duration-300 hover:-translate-y-0.5 whitespace-nowrap cursor-pointer shadow-sm"
           >
             Talk to Us
@@ -195,7 +197,10 @@ export default function Navbar() {
               )}
               <button
                 type="button"
-                onClick={() => handleNavClick('/#contact')}
+                onClick={() => {
+                  setMobileOpen(false);
+                  openConsultation();
+                }}
                 className="inline-flex items-center justify-center px-6 py-3 bg-brand-green text-white font-semibold rounded-full text-base mt-2 cursor-pointer shadow-md"
               >
                 Schedule Consultation
