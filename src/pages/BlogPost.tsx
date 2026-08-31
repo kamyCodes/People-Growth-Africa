@@ -1,0 +1,335 @@
+import { useEffect, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
+
+import AnimateOnScroll from '../components/AnimateOnScroll';
+import SEO from '../components/SEO';
+import { getPostBySlug, getRelatedPosts, categories } from '../data/posts';
+
+export default function BlogPostPage() {
+  const { slug } = useParams<{ slug: string }>();
+
+  const post = slug ? getPostBySlug(slug) : undefined;
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [slug]);
+
+  const related = useMemo(() => (post ? getRelatedPosts(post, 3) : []), [post]);
+
+  if (!post) {
+    return (
+      <>
+        <SEO title="Article Not Found | People Growth Africa" />
+        <section className="min-h-screen flex items-center justify-center bg-white pt-24">
+          <div className="text-center px-6">
+            <h1 className="font-[family-name:var(--font-heading)] text-6xl font-bold text-charcoal mb-4">404</h1>
+            <p className="font-[family-name:var(--font-body)] text-xl text-charcoal/60 mb-8">This article could not be found.</p>
+            <Link to="/blog" className="inline-flex items-center gap-2 px-8 py-3.5 bg-deep-green text-white font-semibold rounded-full hover:bg-terracotta transition-colors">
+              ← Back to Blog
+            </Link>
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  const categoryLabel = categories.find((c) => c.id === post.category)?.label ?? post.category;
+  const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  // Simple markdown-ish renderer for the content
+  const renderContent = (content: string) => {
+    const lines = content.trim().split('\n');
+    const elements: React.ReactNode[] = [];
+    let inList = false;
+    let listItems: React.ReactNode[] = [];
+
+    const flushList = () => {
+      if (inList && listItems.length > 0) {
+        elements.push(
+          <ul key={`list-${elements.length}`} className="list-disc pl-6 mb-6 space-y-2">
+            {listItems}
+          </ul>,
+        );
+        listItems = [];
+        inList = false;
+      }
+    };
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        flushList();
+        continue;
+      }
+
+      // H2
+      if (trimmed.startsWith('## ')) {
+        flushList();
+        elements.push(
+          <h2 key={i} className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-charcoal mt-10 mb-4">
+            {trimmed.slice(3)}
+          </h2>,
+        );
+        continue;
+      }
+
+      // H3
+      if (trimmed.startsWith('### ')) {
+        flushList();
+        elements.push(
+          <h3 key={i} className="font-[family-name:var(--font-heading)] text-xl font-semibold text-charcoal mt-8 mb-3">
+            {trimmed.slice(4)}
+          </h3>,
+        );
+        continue;
+      }
+
+      // List items
+      if (trimmed.startsWith('- ')) {
+        inList = true;
+        listItems.push(
+          <li key={i} className="font-[family-name:var(--font-body)] text-base text-charcoal/70 leading-relaxed">
+            <span dangerouslySetInnerHTML={{ __html: formatInline(trimmed.slice(2)) }} />
+          </li>,
+        );
+        continue;
+      }
+
+      // Numbered items
+      const numMatch = trimmed.match(/^(\d+)\.\s+(.+)/);
+      if (numMatch) {
+        inList = true;
+        listItems.push(
+          <li key={i} className="font-[family-name:var(--font-body)] text-base text-charcoal/70 leading-relaxed">
+            <span dangerouslySetInnerHTML={{ __html: formatInline(numMatch[2]) }} />
+          </li>,
+        );
+        continue;
+      }
+
+      // Regular paragraph
+      flushList();
+      elements.push(
+        <p key={i} className="font-[family-name:var(--font-body)] text-base text-charcoal/70 leading-[1.8] mb-4">
+          <span dangerouslySetInnerHTML={{ __html: formatInline(trimmed) }} />
+        </p>,
+      );
+    }
+    flushList();
+    return elements;
+  };
+
+  return (
+    <>
+      <SEO
+        title={`${post.title} | People Growth Africa`}
+        description={post.excerpt}
+        image={post.image}
+      />
+
+      {/* ── Hero ─────────────────────────────────────── */}
+      <section className="relative bg-deep-green pt-[140px] pb-[80px] overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img
+            src={post.image}
+            alt=""
+            className="w-full h-full object-cover opacity-20"
+            loading="eager"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-deep-green/80 to-deep-green z-[1]" />
+        <div className="relative z-[2] max-w-[800px] mx-auto px-6 text-center">
+          <AnimateOnScroll>
+            <Link to="/blog" className="inline-flex items-center gap-2 text-white/70 hover:text-white font-[family-name:var(--font-body)] text-sm mb-6 transition-colors">
+              ← Back to Blog
+            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-3 mb-5">
+              <span className="inline-flex px-3.5 py-1.5 bg-brand-green/20 text-mint font-[family-name:var(--font-body)] text-[0.78rem] font-semibold rounded-full uppercase tracking-wider">
+                {categoryLabel}
+              </span>
+              <span className="font-[family-name:var(--font-body)] text-[0.85rem] text-white/60">{formattedDate}</span>
+              <span className="font-[family-name:var(--font-body)] text-[0.85rem] text-white/60">{post.readTime} min read</span>
+            </div>
+            <h1 className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.15] mb-6"
+              style={{ fontSize: 'clamp(1.8rem, 4vw, 2.8rem)' }}>
+              {post.title}
+            </h1>
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center font-[family-name:var(--font-heading)] font-semibold text-terracotta text-sm">
+                {post.author.initials}
+              </div>
+              <div className="text-left">
+                <div className="font-[family-name:var(--font-body)] font-semibold text-sm text-white">{post.author.name}</div>
+                <div className="font-[family-name:var(--font-body)] text-[0.8rem] text-white/60">{post.author.role}</div>
+              </div>
+            </div>
+          </AnimateOnScroll>
+        </div>
+      </section>
+
+      {/* ── Article ───────────────────────────────────── */}
+      <section className="py-16 bg-white">
+        <div className="max-w-[720px] mx-auto px-6">
+          <AnimateOnScroll>
+            {/* Featured image on larger screens */}
+            <div className="rounded-[20px] overflow-hidden mb-10 aspect-[16/9] bg-mint">
+              <img
+                src={post.image}
+                alt={post.title}
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
+            </div>
+          </AnimateOnScroll>
+
+          <AnimateOnScroll delay={0.1}>
+            {/* Tags */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              {post.tags.map((tag) => (
+                <span key={tag} className="inline-flex px-3 py-1 bg-mint/50 text-deep-green font-[family-name:var(--font-body)] text-[0.75rem] font-medium rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Article body */}
+            <article className="prose-custom">
+              {renderContent(post.content)}
+            </article>
+          </AnimateOnScroll>
+
+          {/* Share */}
+          <AnimateOnScroll delay={0.15}>
+            <div className="mt-12 pt-8 border-t border-charcoal/8">
+              <p className="font-[family-name:var(--font-body)] text-sm font-semibold text-charcoal mb-4">Share this article</p>
+              <div className="flex gap-3">
+                <a
+                  href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(post.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-mint flex items-center justify-center hover:bg-brand-green hover:text-white text-deep-green transition-colors"
+                  aria-label="Share on LinkedIn"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+                </a>
+                <a
+                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(post.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-mint flex items-center justify-center hover:bg-brand-green hover:text-white text-deep-green transition-colors"
+                  aria-label="Share on X"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-full bg-mint flex items-center justify-center hover:bg-brand-green hover:text-white text-deep-green transition-colors"
+                  aria-label="Share on Facebook"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                </a>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(shareUrl); }}
+                  className="w-10 h-10 rounded-full bg-mint flex items-center justify-center hover:bg-brand-green hover:text-white text-deep-green transition-colors"
+                  aria-label="Copy link"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </AnimateOnScroll>
+
+          {/* Author Bio */}
+          <AnimateOnScroll delay={0.2}>
+            <div className="mt-10 bg-mint/30 rounded-[20px] p-8 flex flex-col sm:flex-row items-start gap-5">
+              <div className="w-16 h-16 rounded-full bg-mint flex items-center justify-center font-[family-name:var(--font-heading)] font-bold text-deep-green text-xl shrink-0">
+                {post.author.initials}
+              </div>
+              <div>
+                <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold text-charcoal/40 uppercase tracking-wider mb-1">About the Author</p>
+                <h3 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-charcoal mb-1">{post.author.name}</h3>
+                <p className="font-[family-name:var(--font-body)] text-[0.9rem] text-brand-green font-medium mb-2">{post.author.role}</p>
+                <p className="font-[family-name:var(--font-body)] text-[0.9rem] text-charcoal/60 leading-relaxed">{post.author.bio}</p>
+              </div>
+            </div>
+          </AnimateOnScroll>
+        </div>
+      </section>
+
+      {/* ── Related Posts ─────────────────────────────── */}
+      {related.length > 0 && (
+        <section className="py-16 bg-cream">
+          <div className="max-w-[1200px] mx-auto px-6">
+            <AnimateOnScroll className="mb-10">
+              <h2 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-charcoal">Related Articles</h2>
+            </AnimateOnScroll>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-7">
+              {related.map((rel, i) => (
+                <AnimateOnScroll key={rel.id} delay={i * 0.1}>
+                  <Link to={`/blog/${rel.slug}`} className="block bg-white rounded-[20px] overflow-hidden shadow-card hover:-translate-y-1.5 hover:shadow-elevated transition-all duration-300 group">
+                    <div className="aspect-[16/10] overflow-hidden bg-mint">
+                      <img src={rel.image} alt={rel.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                    </div>
+                    <div className="p-6">
+                      <span className="inline-flex px-3 py-1 bg-mint text-deep-green font-[family-name:var(--font-body)] text-[0.72rem] font-semibold rounded-full uppercase tracking-wider mb-3">
+                        {categories.find((c) => c.id === rel.category)?.label}
+                      </span>
+                      <h3 className="font-[family-name:var(--font-heading)] text-[1.1rem] font-semibold text-charcoal leading-snug mb-2 group-hover:text-deep-green transition-colors">
+                        {rel.title}
+                      </h3>
+                      <p className="font-[family-name:var(--font-body)] text-[0.85rem] text-charcoal/55 leading-relaxed line-clamp-2">{rel.excerpt}</p>
+                      <div className="flex items-center gap-3 mt-4 pt-3 border-t border-charcoal/6">
+                        <span className="font-[family-name:var(--font-body)] text-[0.78rem] text-charcoal/40">{rel.readTime} min read</span>
+                        <span className="font-[family-name:var(--font-body)] text-[0.78rem] text-charcoal/40">
+                          {new Date(rel.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </AnimateOnScroll>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── CTA ───────────────────────────────────────── */}
+      <section className="relative bg-deep-green py-20 text-center overflow-hidden">
+        <div className="absolute top-[-40px] right-[-40px] w-[200px] h-[200px] rounded-full bg-terracotta/10" />
+        <div className="relative z-[1] max-w-[1200px] mx-auto px-6">
+          <AnimateOnScroll>
+            <h2 className="font-[family-name:var(--font-heading)] font-semibold text-white text-2xl mb-4">
+              Ready to Transform Your People Practices?
+            </h2>
+            <p className="font-[family-name:var(--font-body)] text-white/75 mb-8 max-w-[450px] mx-auto">
+              Let's discuss how People Growth Africa can help your business build the people systems it needs to thrive.
+            </p>
+            <a href="mailto:hello@peoplegrowthafrica.com" className="inline-flex items-center gap-2 px-8 py-3.5 bg-terracotta text-white font-semibold rounded-full hover:bg-brand-green transition-all duration-300">
+              Book Your Free Consultation →
+            </a>
+          </AnimateOnScroll>
+        </div>
+      </section>
+    </>
+  );
+}
+
+/** Format inline markdown: bold, italic, inline code */
+function formatInline(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-charcoal">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code class="bg-mint/50 px-1.5 py-0.5 rounded text-[0.85em]">$1</code>');
+}
