@@ -9,10 +9,22 @@
     <meta property="og:title" content="People Growth Africa | HR & People Consulting for African Business" />
     <meta property="og:description" content="Structured, practical HR built for the realities of the African continent." />
     <meta property="og:type" content="website" />
+    <link rel="manifest" href="/manifest.json" />
     <title>People Growth Africa | HR & People Consulting for African Business</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            console.log('PWA ServiceWorker registered with scope: ', reg.scope);
+          }).catch((err) => {
+            console.log('PWA ServiceWorker registration failed: ', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

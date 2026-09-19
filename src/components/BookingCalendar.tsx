@@ -183,6 +183,24 @@ export default function BookingCalendar() {
     document.body.removeChild(link);
   };
 
+  const getGoogleCalendarUrl = () => {
+    const dateStr = selectedDate.toISOString().split('T')[0].replace(/-/g, '');
+    const startTime = `${dateStr}T100000Z`;
+    const endTime = `${dateStr}T104500Z`;
+    const title = encodeURIComponent(`People Growth Africa Consultation - ${formData.fullName || 'Client'}`);
+    const details = encodeURIComponent(
+      `Advisory consultation with People Growth Africa concerning ${formData.service}. Meeting format: ${
+        formData.meetingFormat === 'virtual' ? 'Google Meet / Zoom' : 'In-Person (Lagos Office)'
+      }.`
+    );
+    const location = encodeURIComponent(
+      formData.meetingFormat === 'virtual'
+        ? 'Virtual (Link will be emailed)'
+        : 'People Growth Africa Office, Lagos, Nigeria'
+    );
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startTime}/${endTime}&details=${details}&location=${location}`;
+  };
+
   return (
     <div className="bg-white rounded-[24px] shadow-elevated border border-charcoal/10 overflow-hidden max-w-[1060px] mx-auto text-left">
       {/* Header Bar */}
@@ -292,6 +310,17 @@ export default function BookingCalendar() {
                 </div>
 
                 <div className="flex flex-wrap items-center justify-center gap-3">
+                  <a
+                    href={getGoogleCalendarUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-brand-green text-white text-sm font-semibold rounded-full hover:bg-terracotta transition-all shadow-sm"
+                  >
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/>
+                    </svg>
+                    Add to Google Calendar
+                  </a>
                   <button
                     type="button"
                     onClick={downloadICS}

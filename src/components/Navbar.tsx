@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConsultation } from '../hooks/useConsultation';
+import LogoIntroAnimation from './LogoIntroAnimation';
 
 const baseNavLinks = [
   { to: '/#services', label: 'Services' },
@@ -74,10 +75,10 @@ export default function Navbar() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         >
-          <img
-            src="/images/logo-white.png"
-            alt="People Growth Africa"
-            className="h-16 md:h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+          <LogoIntroAnimation
+            logoSrc="/images/icon-white.png"
+            wordmarkText="People Growth Africa"
+            className="h-10 md:h-12 w-auto"
           />
         </Link>
 

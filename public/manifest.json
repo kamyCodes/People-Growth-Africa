@@ -1,0 +1,22 @@
+{
+  "short_name": "PGA",
+  "name": "People Growth Africa",
+  "icons": [
+    {
+      "src": "/images/logo-black.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/images/logo-black.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F6E56",
+  "theme_color": "#0F6E56",
+  "display": "standalone",
+  "orientation": "portrait",
+  "description": "Institutional People Systems & Enterprise HR Architecture for High-Growth African Ventures"
+}

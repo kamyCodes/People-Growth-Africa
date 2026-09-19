@@ -132,6 +132,8 @@ export default function BlogPostPage() {
         title={`${post.title} | People Growth Africa`}
         description={post.excerpt}
         image={post.image}
+        url={`/blog/${post.slug}`}
+        type="article"
       />
 
       {/* ── Hero ─────────────────────────────────────── */}

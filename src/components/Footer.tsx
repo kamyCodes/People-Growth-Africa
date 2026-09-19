@@ -135,7 +135,7 @@ export default function Footer() {
                 </span>
               </li>
               <li>
-                <span className="text-[0.9rem] text-white/60">Apapa, Lagos, Nigeria</span>
+                <span className="text-[0.9rem] text-white/60">Lagos, Nigeria</span>
               </li>
             </ul>
           </div>

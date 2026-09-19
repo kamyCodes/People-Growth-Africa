@@ -5,60 +5,63 @@ interface SEOProps {
   description?: string;
   image?: string;
   url?: string;
+  type?: 'website' | 'article';
 }
 
-export default function SEO({ title, description, image, url }: SEOProps) {
+const DEFAULT_IMAGE = '/images/logo-black.png';
+const DEFAULT_SITE_NAME = 'People Growth Africa';
+
+export default function SEO({ title, description, image = DEFAULT_IMAGE, url, type = 'website' }: SEOProps) {
   useEffect(() => {
-    document.title = title;
+    const fullTitle = title.includes('People Growth Africa') ? title : `${title} | ${DEFAULT_SITE_NAME}`;
+    document.title = fullTitle;
 
+    // Helper to set or create meta tags by attribute
+    const setMetaTag = (attrName: string, attrVal: string, content: string) => {
+      let element = document.querySelector(`meta[${attrName}="${attrVal}"]`) as HTMLMetaElement;
+      if (!element) {
+        element = document.createElement('meta');
+        element.setAttribute(attrName, attrVal);
+        document.head.appendChild(element);
+      }
+      element.content = content;
+    };
+
+    // Standard Meta
     if (description) {
-      let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement;
-      if (!meta) {
-        meta = document.createElement('meta');
-        meta.name = 'description';
-        document.head.appendChild(meta);
-      }
-      meta.content = description;
+      setMetaTag('name', 'description', description);
+      setMetaTag('property', 'og:description', description);
+      setMetaTag('name', 'twitter:description', description);
     }
 
-    if (description) {
-      let ogDesc = document.querySelector('meta[property="og:description"]') as HTMLMetaElement;
-      if (!ogDesc) {
-        ogDesc = document.createElement('meta');
-        ogDesc.setAttribute('property', 'og:description');
-        document.head.appendChild(ogDesc);
-      }
-      ogDesc.content = description;
-    }
+    // OpenGraph
+    setMetaTag('property', 'og:title', fullTitle);
+    setMetaTag('property', 'og:type', type);
+    setMetaTag('property', 'og:site_name', DEFAULT_SITE_NAME);
 
-    let ogTitle = document.querySelector('meta[property="og:title"]') as HTMLMetaElement;
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.content = title;
-
-    if (image) {
-      let ogImage = document.querySelector('meta[property="og:image"]') as HTMLMetaElement;
-      if (!ogImage) {
-        ogImage = document.createElement('meta');
-        ogImage.setAttribute('property', 'og:image');
-        document.head.appendChild(ogImage);
-      }
-      ogImage.content = image;
-    }
+    const fullImageUrl = image.startsWith('http') ? image : `${window.location.origin}${image}`;
+    setMetaTag('property', 'og:image', fullImageUrl);
 
     if (url) {
-      let ogUrl = document.querySelector('meta[property="og:url"]') as HTMLMetaElement;
-      if (!ogUrl) {
-        ogUrl = document.createElement('meta');
-        ogUrl.setAttribute('property', 'og:url');
-        document.head.appendChild(ogUrl);
+      const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+      setMetaTag('property', 'og:url', fullUrl);
+
+      // Canonical link
+      let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
       }
-      ogUrl.content = url;
+      canonical.href = fullUrl;
     }
-  }, [title, description, image, url]);
+
+    // Twitter Card
+    setMetaTag('name', 'twitter:card', 'summary_large_image');
+    setMetaTag('name', 'twitter:title', fullTitle);
+    setMetaTag('name', 'twitter:image', fullImageUrl);
+  }, [title, description, image, url, type]);
 
   return null;
 }
+
