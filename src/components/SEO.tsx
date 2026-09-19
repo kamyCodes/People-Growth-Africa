@@ -60,6 +60,51 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
     setMetaTag('name', 'twitter:card', 'summary_large_image');
     setMetaTag('name', 'twitter:title', fullTitle);
     setMetaTag('name', 'twitter:image', fullImageUrl);
+
+    // JSON-LD Schema.org for AI & Search Crawlers (0ms impact, pure inline microdata)
+    let jsonLdScript = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement;
+    if (!jsonLdScript) {
+      jsonLdScript = document.createElement('script');
+      jsonLdScript.type = 'application/ld+json';
+      document.head.appendChild(jsonLdScript);
+    }
+
+    const currentOrigin = window.location.origin;
+    const currentFullUrl = url ? (url.startsWith('http') ? url : `${currentOrigin}${url}`) : currentOrigin;
+
+    if (type === 'article') {
+      jsonLdScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: title,
+        description: description || '',
+        image: fullImageUrl,
+        url: currentFullUrl,
+        publisher: {
+          '@type': 'Organization',
+          name: DEFAULT_SITE_NAME,
+          logo: {
+            '@type': 'ImageObject',
+            url: `${currentOrigin}/images/logo-black.png`,
+          },
+        },
+      });
+    } else {
+      jsonLdScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'ProfessionalService',
+        name: DEFAULT_SITE_NAME,
+        url: currentOrigin,
+        logo: `${currentOrigin}/images/logo-black.png`,
+        description: description || 'Institutional People Systems & Enterprise HR Architecture for High-Growth African Ventures',
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: 'Lagos',
+          addressCountry: 'NG',
+        },
+        areaServed: 'Africa',
+      });
+    }
   }, [title, description, image, url, type]);
 
   return null;
