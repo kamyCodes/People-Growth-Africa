@@ -96,9 +96,9 @@ for (let gy = minY; gy < maxY; gy += stepG) {
   }
 }
 
-// Cap to 180 parts max
+// Cap to 55 parts max for silky smooth 60fps performance
 let finalParts = parts;
-const maxCap = 180;
+const maxCap = 55;
 if (parts.length > maxCap) {
   const stride = parts.length / maxCap;
   finalParts = [];

@@ -15,25 +15,22 @@ export interface LogoIntroAnimationProps {
   precomputedParts?: LogoPart[];
   /** Optional separate wordmark text to animate in Phase D */
   wordmarkText?: string;
-  /** Target density: cell size factor. Lower = denser. Target 250-600 parts, capped at ~180 for render performance */
+  /** Target density: cell size factor. Lower = denser. */
   density?: number;
-  /** Maximum rendering dots cap for Phase A performance */
+  /** Maximum rendering dots cap for Phase A performance (default 55 for 60fps) */
   maxPartsCap?: number;
   /** Callback when intro finishes */
   onComplete?: () => void;
   /** Custom overlay styling */
   className?: string;
-  /** Force animation run even if sessionStorage exists (useful for testing) */
+  /** Force animation run even if sessionStorage exists */
   forceRun?: boolean;
 }
 
-/**
- * Samples an image from URL into a normalized dot-stipple coverage grid.
- */
 function sampleLogoImage(
   logoUrl: string,
-  density: number = 35,
-  maxCap: number = 180
+  density: number = 32,
+  maxCap: number = 55
 ): Promise<{ parts: LogoPart[]; aspectRatio: number }> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -153,7 +150,7 @@ export function LogoIntroAnimation({
   precomputedParts,
   wordmarkText,
   density = 32,
-  maxPartsCap = 180,
+  maxPartsCap = 55,
   onComplete,
   className = '',
   forceRun = false,
@@ -174,7 +171,7 @@ export function LogoIntroAnimation({
   const [parts, setParts] = useState<LogoPart[]>(() => {
     if (precomputedParts && precomputedParts.length > 0) return precomputedParts;
     if (precomputedData && Array.isArray(precomputedData) && precomputedData.length > 0) {
-      return precomputedData as LogoPart[];
+      return (precomputedData as LogoPart[]).slice(0, maxPartsCap);
     }
     return [];
   });
@@ -198,7 +195,7 @@ export function LogoIntroAnimation({
   useEffect(() => {
     if (!shouldAnimate || !isLoaded || parts.length === 0) return;
 
-    const totalDuration = 2.6; // ~2.6s total timeline
+    const totalDuration = 2.6;
     const timeline = gsap.timeline({
       onComplete: () => {
         sessionStorage.setItem('pga_logo_animated', 'true');
@@ -208,26 +205,33 @@ export function LogoIntroAnimation({
 
     const stippleNodes = stippleGroupRef.current?.querySelectorAll('circle') || [];
 
-    // Phase A: Part Scatter-in (0% to 24%, ~625ms)
-    gsap.set(wrapperRef.current, { scale: 4.3, xPercent: 0, yPercent: 0, opacity: 1 });
+    // Hardware acceleration setup
+    gsap.set(wrapperRef.current, {
+      scale: 3.2,
+      xPercent: 0,
+      yPercent: 0,
+      opacity: 1,
+      force3D: true,
+    });
     gsap.set(realLogoRef.current, { opacity: 0 });
 
     if (wordmarkRef.current) {
       gsap.set(wordmarkRef.current.children, {
         clipPath: 'inset(0% 100% 0% 0%)',
-        filter: 'blur(4px)',
+        filter: 'blur(3px)',
         opacity: 0,
       });
     }
 
+    // Phase A: Scatter-in (0% to 24%, ~625ms)
     stippleNodes.forEach((circle, i) => {
       const part = parts[i];
       if (!part) return;
 
-      const angle = Math.atan2(part.y - 0.5, part.x - 0.5) + (Math.random() - 0.5) * 0.4;
-      const dist = (1.4 + Math.random() * 0.8) * 300;
-      const startX = (part.x - 0.5) * 300 + Math.cos(angle) * dist;
-      const startY = (part.y - 0.5) * 300 + Math.sin(angle) * dist;
+      const angle = Math.atan2(part.y - 0.5, part.x - 0.5) + (Math.random() - 0.5) * 0.3;
+      const dist = (1.2 + Math.random() * 0.6) * 220;
+      const startX = (part.x - 0.5) * 220 + Math.cos(angle) * dist;
+      const startY = (part.y - 0.5) * 220 + Math.sin(angle) * dist;
 
       gsap.set(circle, {
         x: startX,
@@ -241,9 +245,9 @@ export function LogoIntroAnimation({
     stippleNodes.forEach((circle, i) => {
       const part = parts[i];
       if (!part) return;
-      const targetX = (part.x - 0.5) * 300;
-      const targetY = (part.y - 0.5) * 300;
-      const randomDelay = Math.random() * 0.28;
+      const targetX = (part.x - 0.5) * 220;
+      const targetY = (part.y - 0.5) * 220;
+      const randomDelay = Math.random() * 0.22;
 
       timeline.to(
         circle,
@@ -252,30 +256,31 @@ export function LogoIntroAnimation({
           y: targetY,
           scale: 1,
           opacity: 1,
-          duration: 0.625,
-          ease: 'back.out(1.4)',
+          duration: 0.55,
+          ease: 'back.out(1.3)',
         },
         randomDelay
       );
     });
 
-    // Phase B: Hold & Idle Breathe (24% to 46%, ~570ms)
+    // Phase B: Gentle Group Breathe (24% to 46%)
     const phaseBTime = totalDuration * 0.24;
-    stippleNodes.forEach((circle, i) => {
+    if (stippleGroupRef.current) {
       timeline.to(
-        circle,
+        stippleGroupRef.current,
         {
-          scale: 1.04,
-          duration: 0.285,
+          scale: 1.03,
+          duration: 0.28,
           repeat: 1,
           yoyo: true,
           ease: 'sine.inOut',
+          transformOrigin: 'center center',
         },
-        phaseBTime + (i % 5) * 0.03
+        phaseBTime
       );
-    });
+    }
 
-    // Phase C: Contract + Reposition (46% to 58%, ~310ms)
+    // Phase C: Contract (46% to 58%)
     const phaseCTime = totalDuration * 0.46;
     const phaseCDuration = totalDuration * 0.12;
 
@@ -289,32 +294,8 @@ export function LogoIntroAnimation({
       phaseCTime
     );
 
-    const nudgeTime = phaseCTime + phaseCDuration * 0.85;
-    timeline.to(
-      wrapperRef.current,
-      {
-        x: -12,
-        duration: 0.15,
-        ease: 'power2.out',
-      },
-      nudgeTime
-    );
-
-    const blurStartTime = phaseCTime + phaseCDuration * 0.6;
-    timeline.to(
-      wrapperRef.current,
-      {
-        filter: 'blur(3px)',
-        duration: phaseCDuration * 0.2,
-        yoyo: true,
-        repeat: 1,
-        ease: 'power1.inOut',
-      },
-      blurStartTime
-    );
-
-    // Phase C.5: Crossfade to real asset (last 15% of Phase C, ~50ms overlap)
-    const crossfadeTime = phaseCTime + phaseCDuration * 0.85;
+    // Phase C.5: Fast crossfade to real crisp logo
+    const crossfadeTime = phaseCTime + phaseCDuration * 0.75;
     timeline.to(
       stippleGroupRef.current,
       {
@@ -337,7 +318,7 @@ export function LogoIntroAnimation({
 
     // Phase D: Wordmark Reveal (50% to 92%)
     if (wordmarkRef.current && wordmarkRef.current.children.length > 0) {
-      const phaseDTime = totalDuration * 0.5;
+      const phaseDTime = totalDuration * 0.48;
       const letters = Array.from(wordmarkRef.current.children);
 
       letters.forEach((letter, i) => {
@@ -347,15 +328,15 @@ export function LogoIntroAnimation({
             clipPath: 'inset(0% 0% 0% 0%)',
             filter: 'blur(0px)',
             opacity: 1,
-            duration: 0.35,
+            duration: 0.3,
             ease: 'expo.out',
           },
-          phaseDTime + i * 0.035
+          phaseDTime + i * 0.025
         );
       });
     }
 
-    // Phase E: Settle (92% to 100%, ~150ms)
+    // Phase E: Settle (92% to 100%)
     const phaseETime = totalDuration * 0.92;
     timeline.to(
       containerRef.current,
@@ -372,12 +353,13 @@ export function LogoIntroAnimation({
     };
   }, [shouldAnimate, isLoaded, parts, onComplete]);
 
+  // Non-animated fallback (e.g. after session refresh)
   if (!shouldAnimate) {
     return (
-      <div className={`inline-flex items-center gap-3 ${className}`}>
-        <img src={logoSrc} alt="People Growth Africa Logo" className="h-9 w-auto" />
+      <div className={`inline-flex items-center gap-1.5 md:gap-2 ${className}`}>
+        <img src={logoSrc} alt="People Growth Africa" className="h-8 md:h-10 w-auto object-contain" />
         {wordmarkText && (
-          <span className="font-[family-name:var(--font-heading)] font-bold text-lg text-charcoal">
+          <span className="font-[family-name:var(--font-heading)] font-bold text-base md:text-lg tracking-tight text-white">
             {wordmarkText}
           </span>
         )}
@@ -388,23 +370,23 @@ export function LogoIntroAnimation({
   return (
     <div
       ref={containerRef}
-      className={`relative inline-flex items-center justify-center p-2 ${className}`}
+      className={`relative inline-flex items-center justify-center p-1 ${className}`}
       style={{ overflow: 'visible' }}
     >
-      <div ref={wrapperRef} className="relative flex items-center gap-3">
-        <div className="relative w-12 h-12 flex items-center justify-center">
+      <div ref={wrapperRef} className="relative flex items-center gap-1.5 md:gap-2">
+        <div className="relative w-9 h-9 md:w-11 md:h-11 flex items-center justify-center">
           <svg
             className="w-full h-full overflow-visible"
-            viewBox="-150 -150 300 300"
-            style={{ width: '48px', height: '48px' }}
+            viewBox="-110 -110 220 220"
+            style={{ width: '40px', height: '40px' }}
           >
             <g ref={stippleGroupRef}>
               {parts.map((part, idx) => (
                 <circle
                   key={idx}
-                  r={part.radius * 300}
+                  r={part.radius * 220}
                   fill="currentColor"
-                  className="text-brand-green"
+                  className="text-mint"
                 />
               ))}
             </g>
@@ -413,13 +395,16 @@ export function LogoIntroAnimation({
           <img
             ref={realLogoRef}
             src={logoSrc}
-            alt="People Growth Africa Logo"
+            alt="People Growth Africa"
             className="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-0"
           />
         </div>
 
         {wordmarkText && (
-          <div ref={wordmarkRef} className="flex items-center font-[family-name:var(--font-heading)] font-bold text-xl tracking-tight text-white">
+          <div
+            ref={wordmarkRef}
+            className="flex items-center font-[family-name:var(--font-heading)] font-bold text-base md:text-lg tracking-tight text-white"
+          >
             {wordmarkText.split('').map((char, index) => (
               <span
                 key={index}
