@@ -11,10 +11,11 @@ interface SEOProps {
 /** Canonical origin. The apex domain redirects here, so every URL we emit uses www. */
 export const SITE_URL = 'https://www.peoplegrowthafrica.com';
 
+/** Stable @id of the single Organization entity declared in index.html. */
+export const ORG_ID = `${SITE_URL}/#organization`;
+
 const DEFAULT_IMAGE = '/images/og-image.jpg';
 const DEFAULT_SITE_NAME = 'People Growth Africa';
-const DEFAULT_DESCRIPTION =
-  'Institutional People Systems & Enterprise HR Architecture for High-Growth African Ventures';
 const MAX_TITLE_LENGTH = 60;
 
 /** Keep titles within ~60 characters so search results show them whole. */
@@ -47,7 +48,14 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
     // Canonical and share URLs always resolve against the www origin and the
     // current route, so each page declares exactly one canonical URL no matter
     // which host, alias or trailing segment the visitor or crawler used.
-    const canonicalUrl = absoluteUrl(url ?? window.location.pathname);
+    // Strip a trailing slash before building the canonical/share URL. Both `/blog`
+    // and `/blog/` are served (there is no host-level redirect between them), so
+    // without this each variant would declare itself canonical and `/blog/` would
+    // become a duplicate of the `/blog` URL used by the sitemap and internal links.
+    // Query strings and hashes never reach this value because only the path is read.
+    const rawPath = window.location.pathname;
+    const normalisedPath = rawPath.length > 1 ? rawPath.replace(/\/+$/, '') : rawPath;
+    const canonicalUrl = absoluteUrl(url ?? normalisedPath);
     const fullImageUrl = absoluteUrl(image);
 
     // Standard Meta
@@ -78,16 +86,20 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
     setMetaTag('name', 'twitter:title', document.title);
     setMetaTag('name', 'twitter:image', fullImageUrl);
 
-    // JSON-LD Schema.org for AI & Search Crawlers (0ms impact, pure inline microdata)
-    let jsonLdScript = document.querySelector('script[type="application/ld+json"]') as HTMLScriptElement;
-    if (!jsonLdScript) {
-      jsonLdScript = document.createElement('script');
-      jsonLdScript.type = 'application/ld+json';
-      document.head.appendChild(jsonLdScript);
-    }
-
+    // Page-level structured data only. The Organization entity ("#organization") is
+    // declared statically in index.html as the single source of truth for the
+    // organisation, so page nodes reference it by @id instead of declaring a
+    // second, competing Organization. This also keeps the static node safe: it is
+    // never the script that gets overwritten here.
+    let pageSchema = document.querySelector<HTMLScriptElement>('script#page-schema');
     if (type === 'article') {
-      jsonLdScript.textContent = JSON.stringify({
+      if (!pageSchema) {
+        pageSchema = document.createElement('script');
+        pageSchema.type = 'application/ld+json';
+        pageSchema.id = 'page-schema';
+        document.head.appendChild(pageSchema);
+      }
+      pageSchema.textContent = JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'BlogPosting',
         headline: title,
@@ -96,6 +108,7 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
         url: canonicalUrl,
         publisher: {
           '@type': 'Organization',
+          '@id': ORG_ID,
           name: DEFAULT_SITE_NAME,
           logo: {
             '@type': 'ImageObject',
@@ -103,21 +116,10 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
           },
         },
       });
-    } else {
-      jsonLdScript.textContent = JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'ProfessionalService',
-        name: DEFAULT_SITE_NAME,
-        url: canonicalUrl,
-        logo: `${SITE_URL}/images/logo-black.png`,
-        description: description || DEFAULT_DESCRIPTION,
-        address: {
-          '@type': 'PostalAddress',
-          addressLocality: 'Lagos',
-          addressCountry: 'NG',
-        },
-        areaServed: 'Africa',
-      });
+    } else if (pageSchema) {
+      // Left an article: drop the stale BlogPosting node so it cannot be read as
+      // a description of the page now on screen.
+      pageSchema.remove();
     }
   }, [title, description, image, url, type]);
 
