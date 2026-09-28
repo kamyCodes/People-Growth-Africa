@@ -112,7 +112,7 @@ export default function Home() {
   return (
     <>
       <SEO
-        title="People Growth Africa | HR & People Consulting for African Business"
+        title="People Growth Africa | HR & People Consulting"
         description="People Growth Africa helps growth-stage businesses across Nigeria and Africa build the people systems, cultures, and practices that turn everyday work into meaningful growth."
       />
 

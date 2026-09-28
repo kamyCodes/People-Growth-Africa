@@ -8,13 +8,25 @@ interface SEOProps {
   type?: 'website' | 'article';
 }
 
+/** Canonical origin. The apex domain redirects here, so every URL we emit uses www. */
+export const SITE_URL = 'https://www.peoplegrowthafrica.com';
+
 const DEFAULT_IMAGE = '/images/og-image.jpg';
 const DEFAULT_SITE_NAME = 'People Growth Africa';
+const DEFAULT_DESCRIPTION =
+  'Institutional People Systems & Enterprise HR Architecture for High-Growth African Ventures';
+const MAX_TITLE_LENGTH = 60;
+
+/** Keep titles within ~60 characters so search results show them whole. */
+function buildTitle(title: string) {
+  if (title.includes(DEFAULT_SITE_NAME)) return title;
+  const branded = `${title} | ${DEFAULT_SITE_NAME}`;
+  return branded.length <= MAX_TITLE_LENGTH ? branded : title;
+}
 
 export default function SEO({ title, description, image = DEFAULT_IMAGE, url, type = 'website' }: SEOProps) {
   useEffect(() => {
-    const fullTitle = title.includes('People Growth Africa') ? title : `${title} | ${DEFAULT_SITE_NAME}`;
-    document.title = fullTitle;
+    document.title = buildTitle(title);
 
     // Helper to set or create meta tags by attribute
     const setMetaTag = (attrName: string, attrVal: string, content: string) => {
@@ -27,6 +39,17 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
       element.content = content;
     };
 
+    const absoluteUrl = (path: string) => {
+      if (path.startsWith('http')) return path;
+      return `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+    };
+
+    // Canonical and share URLs always resolve against the www origin and the
+    // current route, so each page declares exactly one canonical URL no matter
+    // which host, alias or trailing segment the visitor or crawler used.
+    const canonicalUrl = absoluteUrl(url ?? window.location.pathname);
+    const fullImageUrl = absoluteUrl(image);
+
     // Standard Meta
     if (description) {
       setMetaTag('name', 'description', description);
@@ -35,30 +58,24 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
     }
 
     // OpenGraph
-    setMetaTag('property', 'og:title', fullTitle);
+    setMetaTag('property', 'og:title', document.title);
     setMetaTag('property', 'og:type', type);
     setMetaTag('property', 'og:site_name', DEFAULT_SITE_NAME);
-
-    const fullImageUrl = image.startsWith('http') ? image : `${window.location.origin}${image}`;
+    setMetaTag('property', 'og:url', canonicalUrl);
     setMetaTag('property', 'og:image', fullImageUrl);
 
-    if (url) {
-      const fullUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
-      setMetaTag('property', 'og:url', fullUrl);
-
-      // Canonical link
-      let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
-      if (!canonical) {
-        canonical = document.createElement('link');
-        canonical.setAttribute('rel', 'canonical');
-        document.head.appendChild(canonical);
-      }
-      canonical.href = fullUrl;
+    // Canonical link
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
     }
+    canonical.href = canonicalUrl;
 
     // Twitter Card
     setMetaTag('name', 'twitter:card', 'summary_large_image');
-    setMetaTag('name', 'twitter:title', fullTitle);
+    setMetaTag('name', 'twitter:title', document.title);
     setMetaTag('name', 'twitter:image', fullImageUrl);
 
     // JSON-LD Schema.org for AI & Search Crawlers (0ms impact, pure inline microdata)
@@ -69,9 +86,6 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
       document.head.appendChild(jsonLdScript);
     }
 
-    const currentOrigin = window.location.origin;
-    const currentFullUrl = url ? (url.startsWith('http') ? url : `${currentOrigin}${url}`) : currentOrigin;
-
     if (type === 'article') {
       jsonLdScript.textContent = JSON.stringify({
         '@context': 'https://schema.org',
@@ -79,13 +93,13 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
         headline: title,
         description: description || '',
         image: fullImageUrl,
-        url: currentFullUrl,
+        url: canonicalUrl,
         publisher: {
           '@type': 'Organization',
           name: DEFAULT_SITE_NAME,
           logo: {
             '@type': 'ImageObject',
-            url: `${currentOrigin}/images/logo-black.png`,
+            url: `${SITE_URL}/images/logo-black.png`,
           },
         },
       });
@@ -94,9 +108,9 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
         '@context': 'https://schema.org',
         '@type': 'ProfessionalService',
         name: DEFAULT_SITE_NAME,
-        url: currentOrigin,
-        logo: `${currentOrigin}/images/logo-black.png`,
-        description: description || 'Institutional People Systems & Enterprise HR Architecture for High-Growth African Ventures',
+        url: canonicalUrl,
+        logo: `${SITE_URL}/images/logo-black.png`,
+        description: description || DEFAULT_DESCRIPTION,
         address: {
           '@type': 'PostalAddress',
           addressLocality: 'Lagos',
@@ -109,4 +123,3 @@ export default function SEO({ title, description, image = DEFAULT_IMAGE, url, ty
 
   return null;
 }
-

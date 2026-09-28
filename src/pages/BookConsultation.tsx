@@ -6,8 +6,9 @@ export default function BookConsultation() {
   return (
     <>
       <SEO
-        title="Schedule an Executive Consultation | People Growth Africa"
+        title="Book an Executive Consultation | People Growth Africa"
         description="Book a complimentary 30-minute people systems diagnostic session with People Growth Africa. Operating Mon-Fri 8am-6pm, Sat 11am-4pm WAT."
+        url="/consultation"
       />
 
       {/* Hero Header */}

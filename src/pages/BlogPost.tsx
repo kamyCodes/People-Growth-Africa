@@ -19,7 +19,10 @@ export default function BlogPostPage() {
   if (!post) {
     return (
       <>
-        <SEO title="Article Not Found | People Growth Africa" />
+        <SEO
+          title="Article Not Found"
+          description="This article could not be found. Browse the People Growth Africa knowledge hub for HR, compliance, and people management insights."
+        />
         <section className="min-h-screen flex items-center justify-center bg-white pt-24">
           <div className="text-center px-6">
             <h1 className="font-[family-name:var(--font-heading)] text-6xl font-bold text-charcoal mb-4">404</h1>
@@ -129,7 +132,7 @@ export default function BlogPostPage() {
   return (
     <>
       <SEO
-        title={`${post.title} | People Growth Africa`}
+        title={post.title}
         description={post.excerpt}
         image={post.image}
         url={`/blog/${post.slug}`}

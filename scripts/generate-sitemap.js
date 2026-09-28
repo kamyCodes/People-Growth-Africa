@@ -6,7 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, '..');
 
-const DOMAIN = 'https://peoplegrowthafrica.com';
+// The apex domain redirects to www, so www is the canonical origin for every
+// URL we publish here (sitemap, robots.txt, llms.txt).
+const DOMAIN = 'https://www.peoplegrowthafrica.com';
 
 const staticRoutes = [
   '/',
