@@ -176,8 +176,6 @@ export function LogoIntroAnimation({
     return [];
   });
 
-  const [isLoaded, setIsLoaded] = useState(() => parts.length > 0);
-
   useEffect(() => {
     if (!shouldAnimate) {
       if (onComplete) onComplete();
@@ -187,13 +185,12 @@ export function LogoIntroAnimation({
     if (parts.length === 0) {
       sampleLogoImage(logoSrc, density, maxPartsCap).then((res) => {
         setParts(res.parts);
-        setIsLoaded(true);
       });
     }
   }, [shouldAnimate, logoSrc, density, maxPartsCap, onComplete, parts.length]);
 
   useEffect(() => {
-    if (!shouldAnimate || !isLoaded || parts.length === 0) return;
+    if (!shouldAnimate || parts.length === 0) return;
 
     const totalDuration = 2.6;
     let cancelled = false;
@@ -413,10 +410,12 @@ export function LogoIntroAnimation({
       if (startTimerId !== null) clearTimeout(startTimerId);
       timeline.kill();
     };
-  }, [shouldAnimate, isLoaded, parts, onComplete]);
+  }, [shouldAnimate, parts, onComplete]);
 
-  // Non-animated fallback (e.g. after session refresh)
-  if (!shouldAnimate) {
+  // Static lockup: used when the visitor has already seen the intro, prefers
+  // reduced motion, or the logo parts could not be sampled. Without the last
+  // case the header would render nothing at all.
+  if (!shouldAnimate || parts.length === 0) {
     return (
       <div className={`inline-flex items-center gap-1.5 md:gap-2 ${className}`}>
         <img src={logoSrc} alt="People Growth Africa" className="h-8 md:h-10 w-auto object-contain" />
@@ -435,7 +434,16 @@ export function LogoIntroAnimation({
       className={`relative inline-flex items-center justify-center p-1 ${className}`}
       style={{ overflow: 'visible' }}
     >
-      <div ref={wrapperRef} className="relative flex items-center gap-1.5 md:gap-2">
+      {/* The timeline's opening frame is expressed in CSS here as well. These
+          values used to be applied inside the effect below, which runs after
+          the first paint, so the finished lockup flashed for a frame before
+          snapping back to the start. Baking them into the markup means the
+          first frame painted already is the first frame of the animation. */}
+      <div
+        ref={wrapperRef}
+        className="relative flex items-center gap-1.5 md:gap-2"
+        style={{ transform: 'scale(3.2)', willChange: 'transform' }}
+      >
         <div className="relative w-9 h-9 md:w-11 md:h-11 flex items-center justify-center">
           <svg
             className="w-full h-full overflow-visible"
@@ -449,6 +457,7 @@ export function LogoIntroAnimation({
                   r={part.radius * 220}
                   fill="currentColor"
                   className="text-mint"
+                  style={{ opacity: 0 }}
                 />
               ))}
             </g>
@@ -466,12 +475,17 @@ export function LogoIntroAnimation({
           <div
             ref={wordmarkRef}
             className="flex items-center font-[family-name:var(--font-heading)] font-bold text-base md:text-lg tracking-tight text-white"
+            style={{ clipPath: 'inset(0% 100% 0% 0%)' }}
           >
             {wordmarkText.split('').map((char, index) => (
               <span
                 key={index}
                 className="inline-block"
-                style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
+                style={{
+                  whiteSpace: char === ' ' ? 'pre' : 'normal',
+                  opacity: 0,
+                  transform: 'translateY(8px)',
+                }}
               >
                 {char}
               </span>
