@@ -12,7 +12,7 @@ const staticRoutes = [
   '/',
   '/blog',
   '/events',
-  '/book-consultation',
+  '/consultation',
 ];
 
 // Extract post slugs, titles, and excerpts from src/data/posts.ts
@@ -128,7 +128,7 @@ Headquartered in Lagos, Nigeria, People Growth Africa (PGA) specializes in archi
 - Firm Overview & Mission: ${DOMAIN}/#about
 - Upcoming Events & Workshops: ${DOMAIN}/events
 - Enterprise Knowledge Hub / Blog: ${DOMAIN}/blog
-- Book Advisory Consultation: ${DOMAIN}/book-consultation
+- Book Advisory Consultation: ${DOMAIN}/consultation
 
 ## Knowledge Articles & Insights
 `;
@@ -142,7 +142,7 @@ slugs.forEach((slug, i) => {
 llmsTxt += `\n## Contact Information
 - Address: Lagos, Nigeria
 - Operating Hours: Mon-Fri: 8:00 AM - 6:00 PM WAT | Sat: 11:00 AM - 4:00 PM WAT
-- Consultation Booking: ${DOMAIN}/book-consultation
+- Consultation Booking: ${DOMAIN}/consultation
 `;
 
 fs.writeFileSync(path.join(publicDir, 'llms.txt'), llmsTxt, 'utf-8');

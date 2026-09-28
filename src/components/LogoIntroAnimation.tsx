@@ -196,72 +196,88 @@ export function LogoIntroAnimation({
     if (!shouldAnimate || !isLoaded || parts.length === 0) return;
 
     const totalDuration = 2.6;
+    let cancelled = false;
+    let started = false;
+    let rafId: number | null = null;
+    let rafId2: number | null = null;
+    let startTimerId: number | null = null;
     const timeline = gsap.timeline({
+      // Built (and pre-positioned) now, played once fonts + first paint settle.
+      paused: true,
       onComplete: () => {
+        // Release the promoted layer and every inline animation style so the
+        // settled lockup renders exactly like the static fallback.
+        gsap.set(wrapperRef.current, { clearProps: 'transform,willChange' });
+        if (wordmarkRef.current) {
+          gsap.set(wordmarkRef.current, { clearProps: 'clipPath' });
+          gsap.set(wordmarkRef.current.children, { clearProps: 'transform,opacity' });
+        }
         sessionStorage.setItem('pga_logo_animated', 'true');
         if (onComplete) onComplete();
       },
     });
 
     const stippleNodes = stippleGroupRef.current?.querySelectorAll('circle') || [];
+    const circles = Array.from(stippleNodes) as SVGCircleElement[];
 
-    // Hardware acceleration setup
+    // Hardware acceleration setup (translate3d only helps the HTML wrapper).
     gsap.set(wrapperRef.current, {
       scale: 3.2,
       xPercent: 0,
       yPercent: 0,
       opacity: 1,
       force3D: true,
+      willChange: 'transform',
     });
     gsap.set(realLogoRef.current, { opacity: 0 });
 
     if (wordmarkRef.current) {
-      gsap.set(wordmarkRef.current.children, {
-        clipPath: 'inset(0% 100% 0% 0%)',
-        filter: 'blur(3px)',
-        opacity: 0,
-      });
+      // Wipe the wordmark as ONE clipped container instead of a clip-path per
+      // letter, and drop the per-letter blur filters that forced a full
+      // re-rasterisation of every glyph on every frame.
+      gsap.set(wordmarkRef.current, { clipPath: 'inset(0% 100% 0% 0%)' });
+      // Transform + opacity only: both can composite off the main thread.
+      gsap.set(wordmarkRef.current.children, { y: 8, opacity: 0 });
     }
 
     // Phase A: Scatter-in (0% to 24%, ~625ms)
-    stippleNodes.forEach((circle, i) => {
-      const part = parts[i];
-      if (!part) return;
-
+    // Precompute every dot offset up front so the animation performs no DOM
+    // measurements while it runs.
+    const dotOffsets = parts.map((part) => {
       const angle = Math.atan2(part.y - 0.5, part.x - 0.5) + (Math.random() - 0.5) * 0.3;
       const dist = (1.2 + Math.random() * 0.6) * 220;
-      const startX = (part.x - 0.5) * 220 + Math.cos(angle) * dist;
-      const startY = (part.y - 0.5) * 220 + Math.sin(angle) * dist;
-
-      gsap.set(circle, {
-        x: startX,
-        y: startY,
-        scale: 0.2,
-        opacity: 0,
-        transformOrigin: 'center center',
-      });
+      return {
+        startX: (part.x - 0.5) * 220 + Math.cos(angle) * dist,
+        startY: (part.y - 0.5) * 220 + Math.sin(angle) * dist,
+        x: (part.x - 0.5) * 220,
+        y: (part.y - 0.5) * 220,
+      };
     });
 
-    stippleNodes.forEach((circle, i) => {
-      const part = parts[i];
-      if (!part) return;
-      const targetX = (part.x - 0.5) * 220;
-      const targetY = (part.y - 0.5) * 220;
-      const randomDelay = Math.random() * 0.22;
-
-      timeline.to(
-        circle,
-        {
-          x: targetX,
-          y: targetY,
-          scale: 1,
-          opacity: 1,
-          duration: 0.55,
-          ease: 'back.out(1.3)',
-        },
-        randomDelay
-      );
+    // Two batched calls replace the previous 55 gsap.set + 55 timeline.to
+    // calls. Each dot is centred on 0,0, so the explicit '0px 0px' origin
+    // matches 'center center' without a per-node getBBox() layout read.
+    gsap.set(circles, {
+      x: (i: number) => dotOffsets[i].startX,
+      y: (i: number) => dotOffsets[i].startY,
+      scale: 0.2,
+      opacity: 0,
+      transformOrigin: '0px 0px',
     });
+
+    timeline.to(
+      circles,
+      {
+        x: (i: number) => dotOffsets[i].x,
+        y: (i: number) => dotOffsets[i].y,
+        scale: 1,
+        opacity: 1,
+        duration: 0.55,
+        ease: 'back.out(1.3)',
+        stagger: { amount: 0.22, from: 'random' },
+      },
+      0
+    );
 
     // Phase B: Gentle Group Breathe (24% to 46%)
     const phaseBTime = totalDuration * 0.24;
@@ -274,7 +290,8 @@ export function LogoIntroAnimation({
           repeat: 1,
           yoyo: true,
           ease: 'sine.inOut',
-          transformOrigin: 'center center',
+          // (0,0) is the logo centre in viewBox space — no getBBox() read.
+          transformOrigin: '0px 0px',
         },
         phaseBTime
       );
@@ -319,21 +336,31 @@ export function LogoIntroAnimation({
     // Phase D: Wordmark Reveal (50% to 92%)
     if (wordmarkRef.current && wordmarkRef.current.children.length > 0) {
       const phaseDTime = totalDuration * 0.48;
-      const letters = Array.from(wordmarkRef.current.children);
+      const letters = Array.from(wordmarkRef.current.children) as HTMLElement[];
 
-      letters.forEach((letter, i) => {
-        timeline.to(
-          letter,
-          {
-            clipPath: 'inset(0% 0% 0% 0%)',
-            filter: 'blur(0px)',
-            opacity: 1,
-            duration: 0.3,
-            ease: 'expo.out',
-          },
-          phaseDTime + i * 0.025
-        );
-      });
+      // The wipe runs on the container: one clipped element, one paint region.
+      timeline.to(
+        wordmarkRef.current,
+        {
+          clipPath: 'inset(0% 0% 0% 0%)',
+          duration: 0.55,
+          ease: 'power2.out',
+        },
+        phaseDTime
+      );
+
+      // The letters themselves only move and fade, both off the main thread.
+      timeline.to(
+        letters,
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.3,
+          ease: 'expo.out',
+          stagger: 0.025,
+        },
+        phaseDTime
+      );
     }
 
     // Phase E: Settle (92% to 100%)
@@ -348,7 +375,42 @@ export function LogoIntroAnimation({
       phaseETime
     );
 
+    // Hold the intro until the web fonts have settled and the load frame has
+    // painted, so it never fights the rest of the page for the main thread.
+    // If the fonts are already in, this resolves without adding a delay.
+    const fontsPending =
+      typeof document !== 'undefined' && 'fonts' in document && document.fonts.status !== 'loaded';
+    const fontsReady = fontsPending
+      ? Promise.race([
+          document.fonts.ready.catch(() => undefined),
+          new Promise((resolve) => setTimeout(resolve, 500)),
+        ])
+      : Promise.resolve();
+
+    const begin = () => {
+      if (cancelled || started) return;
+      started = true;
+      timeline.play(0);
+    };
+
+    fontsReady.then(() => {
+      if (cancelled) return;
+      // Prefer a frame boundary, but never depend on rAF alone: occluded or
+      // embedded webviews can pause it indefinitely, which would otherwise
+      // strand the logo invisible. The timer is the safety net.
+      if (typeof requestAnimationFrame === 'function') {
+        rafId = requestAnimationFrame(() => {
+          rafId2 = requestAnimationFrame(begin);
+        });
+      }
+      startTimerId = window.setTimeout(begin, 120);
+    });
+
     return () => {
+      cancelled = true;
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      if (rafId2 !== null) cancelAnimationFrame(rafId2);
+      if (startTimerId !== null) clearTimeout(startTimerId);
       timeline.kill();
     };
   }, [shouldAnimate, isLoaded, parts, onComplete]);

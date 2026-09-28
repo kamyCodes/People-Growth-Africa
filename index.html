@@ -18,7 +18,12 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then((reg) => {
+          // Version the SW cache with the deployed bundle filename, so every
+          // deploy gets a fresh cache (in dev there is no bundle -> 'pga-dev').
+          const bundle = document.querySelector('script[type="module"][src*="/assets/"]');
+          const version = bundle ? new URL(bundle.src, location.href).pathname.split('/').pop() : '';
+          const swUrl = version ? '/sw.js?v=' + encodeURIComponent(version) : '/sw.js';
+          navigator.serviceWorker.register(swUrl).then((reg) => {
             console.log('PWA ServiceWorker registered with scope: ', reg.scope);
           }).catch((err) => {
             console.log('PWA ServiceWorker registration failed: ', err);
