@@ -6,268 +6,160 @@
   <img alt="People Growth Africa" src="public/images/logo-black.png" width="380" />
 </picture>
 
-<br />
-<br />
+# The People Growth Africa Website
 
-# People Growth Africa
+**The public website for People Growth Africa — HR and people consulting for growing African businesses.**
 
-**Institutional People Systems and Organizational Infrastructure for High-Growth African Enterprises**
-
-[![React](https://img.shields.io/badge/React-19.2-0F6E56?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-0F6E56?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-8.2-0F6E56?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4.3-0F6E56?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Framer Motion](https://img.shields.io/badge/Framer_Motion-13.1-0F6E56?style=for-the-badge&logo=framer&logoColor=white)](https://www.framer.com/motion/)
-[![Oxlint](https://img.shields.io/badge/Linter-Oxlint-0F6E56?style=for-the-badge)](https://oxc.rs/)
-
-<br />
-
-[Executive Overview](#executive-overview) &bull;
-[Key Specialities](#key-specialities) &bull;
-[Technology Stack](#technology-stack) &bull;
-[System Architecture](#system-architecture) &bull;
-[Repository Structure](#repository-structure) &bull;
-[Getting Started](#getting-started) &bull;
-[Design System](#design-system--brand-identity) &bull;
-[Deployment](#deployment)
+**[www.peoplegrowthafrica.com](https://www.peoplegrowthafrica.com)**
 
 </div>
 
 ---
 
-## Executive Overview
+## What this is
 
-**People Growth Africa (PGA)** is an HR and organizational consulting practice headquartered in Lagos, Nigeria. The firm specializes in architecting structured, culturally congruent, and legally compliant people systems for SMEs, agribusinesses, and growth-stage enterprises operating across the African continent.
+Everything that makes up the website lives in this folder — every page, every article, every photograph and every brand colour.
 
-This repository houses the official digital platform for People Growth Africa, delivering an interactive advisory interface, an enterprise-grade knowledge hub, and self-service diagnostic capabilities.
+You don't need to write code to keep the site up to date. This guide explains what's here, how to change the words and pictures, and how to publish an update to the live site.
 
-### Strategic Foundation
+The live website is **https://www.peoplegrowthafrica.com**.
 
-* **Vision**: A Pan-African economy where enterprises of all scales command world-class people practices, aligning organizational profitability directly with workforce development.
-* **Mission**: To help organizations across Africa build the talent, systems, and cultures that turn everyday operations into sustainable, scalable growth.
-* **Core Market**: Growth-stage ventures, agribusinesses, technology companies, and SMEs spanning 10 to 100+ employees seeking transition from informal staffing to structured people governance.
+---
 
-### Foundational Values
+## What's on the site
 
-| Principle | Strategic Focus |
+| Page | Web address | What visitors find there |
+| :--- | :--- | :--- |
+| Home | `/` | The main introduction: what we do, our service areas, client outcomes, FAQs and a "get in touch" section. |
+| Events | `/events` | Webinars, masterclasses and mentorship cohorts, with a registration form. |
+| Blog | `/blog` | The full knowledge hub: all published articles in one place, with search and category filters. |
+| Article | `/blog/article-name` | A single article, with the author, reading time and related reading. |
+| Book a consultation | `/consultation` | The booking calendar where visitors request a session. |
+| Not found | any other address | A friendly page shown when someone follows a link that doesn't exist. |
+
+The site also publishes `sitemap.xml`, `robots.txt` and `llms.txt`, which help Google and other search engines find and understand the pages. These are written automatically every time the site is built — you never need to edit them by hand.
+
+---
+
+## Changing the words and pictures
+
+Almost everything you'd want to update sits in three files, and you only ever change the text **inside the quotation marks**.
+
+| What you want to change | Where to find it |
 | :--- | :--- |
-| **Transparency** | Clear, actionable diagnostic insights without corporate jargon or hidden agendas. |
-| **Excellence** | Evidence-based methodologies adapted specifically to African business realities. |
-| **Partnership** | Long-term operational embedding to ensure internal capability transfer. |
-| **Local Expertise** | Deep adherence to regional labor laws, workforce dynamics, and cultural context. |
+| Blog articles (titles, text, author, date) | `src/data/posts.ts` — **9 articles** published |
+| Events and programmes | `src/data/events.ts` — **5 programmes** listed |
+| The 15 service areas | `src/data/services.ts` |
+| Wording on a page itself | `src/pages/` — one file per page |
+| Photographs, logos and social share image | `public/images/` |
 
----
+**When editing these files, keep the surrounding quotes and commas exactly as they are.** The website reads them like a form — if you remove a comma the page will refuse to load. If you're unsure, ask before saving.
 
-## Key Specialities
+### Adding a new article
 
-The platform represents the comprehensive advisory portfolio of People Growth Africa across fifteen core disciplines:
+1. Copy an existing article in `src/data/posts.ts`, from its opening brace `{` to its closing `},`.
+2. Paste it at the top of the list and change the words. Give it a new, lower-case `slug` — that becomes the web address, so `slug: 'my-new-article'` becomes `/blog/my-new-article`.
+3. Save, preview the site to check it looks right, then publish.
 
-* **Strategic HR Advisory & Retainerships**: Embedded ongoing strategic guidance for leadership teams.
-* **Nigerian Labour Law & Compliance**: Audits, regulatory risk mitigation, and compliance frameworks.
-* **Organisational Architecture**: Job family structuring, grade level design, and reporting hierarchies.
-* **Performance & OKR Systems**: Objective setting, continuous appraisal cycles, and KPI tracking.
-* **Agribusiness Workforce Systems**: Specialized operational HR designed for agricultural enterprises.
-* **Talent Acquisition & Onboarding**: Structured hiring pipelines, assessment frameworks, and induction.
-* **Learning & Capability Development**: Competency matrix design and corporate training academies.
-* **Culture & Employee Engagement**: Workplace climate assessment, retention programs, and value alignment.
+New articles appear on the blog page, in the sitemap, and in the search-engine files automatically. Nothing else needs updating.
 
----
+### Pictures
 
-## Technology Stack
+Keep photographs under about **300 KB** each and around **1600 pixels** wide. Large pictures are the main reason websites feel slow, especially on mobile data, and most of our readers are browsing on a phone.
 
-The web application is engineered with modern frontend technologies focused on extreme performance, sub-millisecond route transitions, and responsive layout fidelity.
-
-| Layer | Technology | Specification / Version | Purpose |
-| :--- | :--- | :--- | :--- |
-| **Runtime & Core** | React | `v19.2.x` | Modern component architecture and concurrent rendering |
-| **Type System** | TypeScript | `v6.0.x` | Static typing and domain model enforcement |
-| **Tooling & HMR** | Vite | `v8.2.x` | Next-generation frontend build tooling and rapid HMR |
-| **Styling Engine** | Tailwind CSS | `v4.3.x` | Modern styling engine with custom theme token design |
-| **Motion Physics** | Framer Motion | `v13.1.x` | Scroll-triggered transitions and micro-interactions |
-| **Routing** | React Router | `v7.18.x` | Client-side routing with deep link and history support |
-| **Static Analysis** | Oxlint | `v1.79.x` | High-performance Rust-based JavaScript/TypeScript linter |
-
----
-
-## System Architecture
-
-```
-                                +---------------------------+
-                                |      Browser Client       |
-                                +-------------+-------------+
-                                              |
-                                              v
-                                +---------------------------+
-                                |  React 19 + Router Core   |
-                                +-------------+-------------+
-                                              |
-                      +-----------------------+-----------------------+
-                      |                                               |
-                      v                                               v
-        +---------------------------+                   +---------------------------+
-        |     Presentation Layer    |                   |       Content Engine      |
-        | - Fraunces / DM Sans Typo |                   | - Structured Articles     |
-        | - Tailwind v4 Tokens      |                   | - Categorized Feed        |
-        | - Framer Motion Engine    |                   | - SEO Meta Controllers    |
-        +---------------------------+                   +---------------------------+
-                      |                                               |
-                      +-----------------------+-----------------------+
-                                              |
-                                              v
-                                +---------------------------+
-                                |  Optimized Production     |
-                                |  Static Artifacts (dist)  |
-                                +---------------------------+
-```
-
-### Route Map
-
-* `/` &mdash; **Executive Homepage**: Value proposition, service catalog, interactive FAQ accordion, diagnostic booking, and lead intake.
-* `/blog` &mdash; **Knowledge Base**: Curated publications on African labor policies, leadership strategies, and workforce optimization.
-* `/blog/:slug` &mdash; **Article Reader**: Comprehensive long-form content layout with reading estimations and related publication feeds.
-* `/*` &mdash; **404 Recovery**: Contextual fallback router with return navigation.
-
----
-
-## Repository Structure
-
-```
-pga-web/
-├── public/
-│   ├── images/
-│   │   ├── icon-black.png       # Brand icon mark (dark variant)
-│   │   ├── icon-white.png       # Brand icon mark (light variant)
-│   │   ├── logo-black.png       # Master corporate logo (dark variant)
-│   │   └── logo-white.png       # Master corporate logo (light variant)
-│   ├── favicon.svg              # Scalable SVG site favicon
-│   └── icons.svg                # System icon sprite definitions
-├── src/
-│   ├── assets/                  # Local component media and static assets
-│   ├── components/
-│   │   ├── AnimateOnScroll.tsx  # Viewport intersection animation wrapper
-│   │   ├── Footer.tsx           # Institutional footer and navigation matrix
-│   │   ├── Layout.tsx           # Global chrome layout wrapper
-│   │   ├── Navbar.tsx           # Responsive header navigation
-│   │   └── SEO.tsx              # Dynamic document title and OpenGraph tags
-│   ├── data/
-│   │   └── posts.ts             # Typed publication catalog and content store
-│   ├── hooks/                   # Custom application React hooks
-│   ├── lib/                     # Utilities and helper libraries
-│   ├── pages/
-│   │   ├── BlogList.tsx         # Filterable knowledge base directory
-│   │   ├── BlogPost.tsx         # Long-form article reader view
-│   │   ├── Home.tsx             # Primary corporate landing experience
-│   │   └── NotFound.tsx         # 404 error state view
-│   ├── App.tsx                  # Root routing and application composition
-│   ├── index.css                # Tailwind theme tokens and base typography
-│   └── main.tsx                 # DOM mounting and application entry point
-├── .oxlintrc.json               # Oxlint static analysis ruleset
-├── package.json                 # Dependency matrix and execution scripts
-├── tsconfig.json                # TypeScript compiler configuration
-└── vite.config.ts               # Vite bundler and build configuration
-```
-
----
-
-## Getting Started
-
-### Prerequisites
-
-* **Node.js**: `v20.x` or later (LTS recommended)
-* **npm**: `v10.x` or later (or equivalent package manager: `pnpm`, `yarn`, `bun`)
-
-### Installation
-
-Clone the repository and install all required workspace dependencies:
+The four brand logos are already optimised. If they ever need regenerating, a script is included:
 
 ```bash
-git clone https://github.com/kamyCodes/People-Growth-Africa.git
-cd People-Growth-Africa
-npm install
-```
-
-### Development Server
-
-Start the local development server with Hot Module Replacement (HMR):
-
-```bash
-npm run dev
-```
-
-The application will be accessible at `http://localhost:5173`.
-
-### Code Quality and Linting
-
-Execute static analysis across the codebase via Oxlint:
-
-```bash
-npm run lint
-```
-
-### Production Build
-
-Compile and optimize the source code into static assets for production distribution:
-
-```bash
-npm run build
-```
-
-Verify the production build locally via Vite's preview server:
-
-```bash
-npm run preview
+npm run images
 ```
 
 ---
 
-## Design System & Brand Identity
+## Seeing the site on your own computer
 
-The platform utilizes a tailored design language reflecting the natural landscapes, resilience, and economic ambition of the African continent.
+You'll need to install [Node.js](https://nodejs.org) once (the "LTS" version is the right one). After that, open a terminal in this folder and run:
 
-### Corporate Palette
+```bash
+npm install     # one time only — gathers everything the site needs
+npm run dev     # starts the site on your computer
+```
 
-| Token Name | Hex Code | Swatch Preview | Usage Context |
-| :--- | :--- | :--- | :--- |
-| `--color-deep-green` | `#0F6E56` | `■ #0F6E56` | Primary brand identifier, executive banners, accent badges |
-| `--color-brand-green` | `#1D9E75` | `■ #1D9E75` | Interactive controls, active states, key emphasis elements |
-| `--color-mint` | `#E1F5EE` | `■ #E1F5EE` | Card backgrounds, badge containers, light highlights |
-| `--color-terracotta` | `#C4773B` | `■ #C4773B` | Warm secondary accents, callout markers, section contrast |
-| `--color-cream` | `#F2EDE4` | `■ #F2EDE4` | Subtle surface contrasts, secondary backgrounds |
-| `--color-charcoal` | `#1A1E1B` | `■ #1A1E1B` | High-contrast typography, structural dark backgrounds |
+Then open **http://localhost:5173** in your browser. This is a private preview — only you can see it, and nothing you do here affects the live website.
 
-### Typography Tokens
+Leave it running while you work: as soon as you save a file, the preview updates by itself. Press `Ctrl + C` in the terminal when you're finished.
 
-* **Display & Heading**: `Fraunces` &mdash; High-character serif typeface delivering an authoritative, bespoke institutional presence.
-* **Body & User Interface**: `DM Sans` &mdash; High-legibility geometric sans-serif engineered for digital interfaces.
+To double-check the final version before publishing:
 
-### Brand Assets Matrix
+```bash
+npm run build     # prepares the finished version
+npm run preview   # shows the finished version at http://localhost:4173
+```
+
+---
+
+## Publishing your changes
+
+Once you're happy with a change, send it to the live site:
+
+```bash
+git add .
+git commit -m "Describe what you changed"
+git push
+```
+
+The website rebuilds itself within about a minute. Refresh the live site to confirm your change appeared.
+
+If something looks wrong after publishing, don't panic — every published version is kept, so the previous one can be restored.
+
+---
+
+## Brand colours and fonts
+
+Use these exact values so the website stays consistent with our other materials.
+
+| Colour | Value | Where it's used |
+| :--- | :--- | :--- |
+| Deep Green | `#0F6E56` | The main brand colour: headers, banners, buttons. |
+| Brand Green | `#1D9E75` | Buttons and links when you hover over them. |
+| Mint | `#E1F5EE` | Soft backgrounds behind cards and labels. |
+| Terracotta | `#C4773B` | Warm accent colour for highlights and calls to action. |
+| Cream | `#F2EDE4` | Quiet background sections. |
+| Charcoal | `#1A1E1B` | Body text and dark sections. |
+
+**Fonts:** `Fraunces` for headings and `DM Sans` for everything else. Both are free from Google Fonts.
+
+### Brand assets
 
 <div align="center">
 
-| Master Logo (Dark) | Master Logo (Light) | Icon Mark (Dark) | Icon Mark (Light) |
+| Logo (dark) | Logo (light) | Icon (dark) | Icon (light) |
 | :---: | :---: | :---: | :---: |
-| <img src="public/images/logo-black.png" width="160" alt="Logo Dark" /> | <img src="public/images/logo-white.png" width="160" alt="Logo Light" /> | <img src="public/images/icon-black.png" width="60" alt="Icon Dark" /> | <img src="public/images/icon-white.png" width="60" alt="Icon Light" /> |
-| `public/images/logo-black.png` | `public/images/logo-white.png` | `public/images/icon-black.png` | `public/images/icon-white.png` |
+| <img src="public/images/logo-black.png" width="160" alt="Logo dark" /> | <img src="public/images/logo-white.png" width="160" alt="Logo light" /> | <img src="public/images/icon-black.png" width="60" alt="Icon dark" /> | <img src="public/images/icon-white.png" width="60" alt="Icon light" /> |
+| `logo-black.png` | `logo-white.png` | `icon-black.png` | `icon-white.png` |
 
 </div>
 
----
-
-## Deployment
-
-The application is structured as a single-page application (SPA) and can be deployed to any modern static hosting provider or containerized web server.
-
-### Recommended Providers
-
-* **Vercel**: Seamless integration with automatic preview deployments and SPA rewrites (`rewrites: [{ "source": "/(.*)", "destination": "/" }]`).
-* **Netlify**: Automatic branch previews with standard redirect rule (`/* /index.html 200`).
-* **Cloudflare Pages**: High-performance edge static asset distribution.
-* **Nginx / Custom Container**: Ensure all routes fallback to `index.html` for client-side routing resolution.
+These live in `public/images/`. The dark versions are for light backgrounds, the light versions for dark backgrounds.
 
 ---
 
-## Governance & License
+## Good to know
+
+* **Always share links with `www.`** Our address without `www` redirects to the `www` version, so `www.peoplegrowthafrica.com/events` is the correct form. Search engines are told the `www` version is the official one.
+* **Every page has its own title and description.** These are the blue headline and grey text that appear in Google results. They're set automatically, so you don't need to write them.
+* **The site works offline.** Once someone has visited, their browser keeps a copy so the site still opens on a weak connection.
+* **The website is free to host.** It's a set of static files, which is why it loads quickly and costs nothing to serve.
+
+---
+
+## Getting help
+
+If a page won't load, if you'd like a new kind of page, or if anything here doesn't make sense — reach out before editing. A small question now is much easier than fixing a broken page later.
+
+---
+
+## Ownership
 
 All rights reserved &copy; 2025–2026 **People Growth Africa**.
 
-Proprietary enterprise platform engineered for People Growth Africa. Internal architectural patterns and corporate assets may not be reproduced without explicit written consent.
+This is a proprietary platform built for People Growth Africa. The content, branding and design may not be reproduced without written permission.
