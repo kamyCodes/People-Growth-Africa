@@ -8,7 +8,7 @@ interface SEOProps {
   type?: 'website' | 'article';
 }
 
-const DEFAULT_IMAGE = '/images/logo-black.png';
+const DEFAULT_IMAGE = '/images/og-image.jpg';
 const DEFAULT_SITE_NAME = 'People Growth Africa';
 
 export default function SEO({ title, description, image = DEFAULT_IMAGE, url, type = 'website' }: SEOProps) {
