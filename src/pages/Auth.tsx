@@ -35,6 +35,91 @@ const PANEL_COPY: Record<Role | 'login', { headline: string; text: string }> = {
   },
 };
 
+// Contour clusters for the brand panel: every ring is a scaled, slightly
+// rotated copy of one shared path, so the set reads like hand-plotted
+// topography. Stroke colors come from the Tailwind brand tokens, and
+// vector-effect keeps every line crisp no matter how far it is scaled.
+const CONTOUR_CLUSTERS: {
+  cx: number;
+  cy: number;
+  strokeClass: string;
+  opacity: number;
+  rings: number[];
+  rotateStep: number;
+}[] = [
+  {
+    cx: 424,
+    cy: 60,
+    strokeClass: 'stroke-brand-green',
+    opacity: 0.5,
+    rings: [2.8, 2.28, 1.82, 1.42, 1.06, 0.76, 0.5, 0.28],
+    rotateStep: 9,
+  },
+  {
+    cx: 36,
+    cy: 566,
+    strokeClass: 'stroke-mint',
+    opacity: 0.22,
+    rings: [2.2, 1.72, 1.3, 0.95, 0.64, 0.38],
+    rotateStep: -7,
+  },
+  {
+    cx: -34,
+    cy: 238,
+    strokeClass: 'stroke-brand-green',
+    opacity: 0.34,
+    rings: [1.6, 1.16, 0.78, 0.45],
+    rotateStep: 11,
+  },
+  {
+    cx: 474,
+    cy: 432,
+    strokeClass: 'stroke-mint',
+    opacity: 0.26,
+    rings: [1.5, 1.06, 0.68, 0.36],
+    rotateStep: -13,
+  },
+];
+
+/** Decorative topographic pattern behind the auth panel copy. */
+function AuthContourPattern() {
+  return (
+    <svg
+      className="absolute inset-0 z-0 h-full w-full"
+      viewBox="0 0 460 640"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <defs>
+        {/* One wobbly closed ring; every contour is a copy of this path. */}
+        <path
+          id="pga-auth-contour"
+          d="M 0 -100 C 62 -92 98 -48 96 6 C 94 58 74 84 24 98 C -26 111 -88 70 -96 12 C -103 -44 -54 -107 0 -100 Z"
+          vectorEffect="non-scaling-stroke"
+        />
+      </defs>
+      {CONTOUR_CLUSTERS.map((cluster, clusterIndex) => (
+        <g
+          key={clusterIndex}
+          className={`fill-none ${cluster.strokeClass}`}
+          strokeOpacity={cluster.opacity}
+          strokeWidth={1.25}
+          strokeLinecap="round"
+        >
+          {cluster.rings.map((scale, ringIndex) => (
+            <use
+              key={ringIndex}
+              href="#pga-auth-contour"
+              transform={`translate(${cluster.cx} ${cluster.cy}) rotate(${cluster.rotateStep * ringIndex}) scale(${scale})`}
+            />
+          ))}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 const inputClass =
   'w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-[family-name:var(--font-body)] text-base text-charcoal placeholder:text-charcoal/40 transition-colors motion-reduce:transition-none focus:border-brand-green focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-1';
 
@@ -229,19 +314,13 @@ export default function Auth() {
         <div className="absolute inset-x-0 top-0 h-[100px] bg-deep-green" aria-hidden="true" />
         <div className="relative max-w-[1000px] mx-auto px-5 md:px-6 pt-[130px] pb-[70px]">
           <div className="grid gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_460px] min-[820px]:gap-8">
-            {/* Brand panel. The photograph is the same one the home hero uses,
-                held well back under the brand green so it reads as texture and
-                keeps the headline contrast. Decorative, so no alt text. */}
+            {/* Brand panel. An inline contour-line pattern in the brand greens
+                replaces the photograph, so /auth loads no external images at
+                all. Purely decorative, so it is hidden from assistive tech. */}
             <aside className="relative overflow-hidden rounded-[20px] bg-deep-green text-white px-6 py-7 min-[820px]:px-10 min-[820px]:py-12 flex flex-col justify-start">
-              <img
-                src="https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=1200&q=80&auto=format"
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 z-0 h-full w-full object-cover opacity-30"
-                loading="eager"
-              />
+              <AuthContourPattern />
               <div
-                className="absolute inset-0 z-[1] bg-gradient-to-br from-deep-green/92 via-deep-green/80 to-brand-green/65"
+                className="absolute inset-0 z-[1] bg-gradient-to-br from-deep-green/55 via-deep-green/25 to-brand-green/45"
                 aria-hidden="true"
               />
               <Link
