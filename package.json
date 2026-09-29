@@ -21,7 +21,7 @@
     "@upstash/redis": "1.39.0",
     "@vercel/analytics": "^2.0.1",
     "bcryptjs": "3.0.3",
-    "framer-motion": "^13.1.1",
+    "framer-motion": "^13.4.4",
     "gsap": "^3.15.0",
     "jose": "6.2.12",
     "pngjs": "^7.0.0",
