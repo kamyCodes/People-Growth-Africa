@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { ContourPanel } from '../components/ContourPattern';
 import SEO from '../components/SEO';
 import { authRequest } from '../lib/authClient';
 
@@ -43,32 +44,34 @@ export default function VerifyEmail() {
       />
       <section className="bg-cream pt-[140px] pb-[100px] min-h-screen">
         <div className="max-w-[520px] mx-auto px-5 md:px-6 text-center">
-          <h1 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-semibold text-charcoal mb-3">
-            {view.status === 'done' ? 'Your email is confirmed.' : 'Confirming your email'}
-          </h1>
+          <ContourPanel className="mb-8 px-6 py-7 md:px-8 md:py-9">
+            <h1 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-semibold text-white mb-3">
+              {view.status === 'done' ? 'Your email is confirmed.' : 'Confirming your email'}
+            </h1>
 
-          {view.status === 'working' && (
-            <p role="status" className="font-[family-name:var(--font-body)] text-charcoal/65">
-              One moment.
-            </p>
-          )}
+            {view.status === 'working' && (
+              <p role="status" className="font-[family-name:var(--font-body)] text-white/80">
+                One moment.
+              </p>
+            )}
 
-          {view.status === 'done' && (
-            <p className="font-[family-name:var(--font-body)] text-charcoal/65 leading-relaxed">
-              Your account is ready. You can close this tab and continue where you left off.
-            </p>
-          )}
+            {view.status === 'done' && (
+              <p className="font-[family-name:var(--font-body)] text-white/80 leading-relaxed">
+                Your account is ready. You can close this tab and continue where you left off.
+              </p>
+            )}
 
-          {view.status === 'failed' && (
-            <p
-              role="alert"
-              className="font-[family-name:var(--font-body)] text-charcoal/75 leading-relaxed"
-            >
-              {view.message}
-            </p>
-          )}
+            {view.status === 'failed' && (
+              <p
+                role="alert"
+                className="font-[family-name:var(--font-body)] text-white/85 leading-relaxed"
+              >
+                {view.message}
+              </p>
+            )}
+          </ContourPanel>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/auth#login"
               className="inline-flex items-center justify-center rounded-full bg-brand-green px-6 py-3 font-[family-name:var(--font-body)] text-sm font-semibold text-white transition-colors motion-reduce:transition-none hover:bg-terracotta focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2"

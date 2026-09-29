@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ContourPanel } from './ContourPattern';
 import { useAuth } from '../hooks/useAuth';
 import { authRequest } from '../lib/authClient';
 
@@ -107,18 +108,22 @@ export default function DashboardPanel({
   return (
     <section className="bg-cream pt-[120px] pb-[80px] min-h-screen">
       <div className="max-w-[820px] mx-auto px-5 md:px-6">
-        <p className="font-[family-name:var(--font-body)] text-xs font-semibold uppercase tracking-[0.12em] text-brand-green mb-2">
-          {eyebrow}
-        </p>
-        <h1
-          className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.2] mb-3"
-          style={{ fontSize: 'clamp(1.8rem, 4vw, 2.4rem)' }}
-        >
-          {title}
-        </h1>
-        <p className="font-[family-name:var(--font-body)] text-base text-charcoal/65 max-w-[52ch] leading-relaxed mb-8">
-          {intro}
-        </p>
+        {/* The heading sits on the brand panel so the dashboard carries the
+            same texture as the page it was reached from. */}
+        <ContourPanel className="mb-8 px-5 py-6 md:px-8 md:py-8">
+          <p className="font-[family-name:var(--font-body)] text-xs font-semibold uppercase tracking-[0.12em] text-mint mb-2">
+            {eyebrow}
+          </p>
+          <h1
+            className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.2] mb-3"
+            style={{ fontSize: 'clamp(1.8rem, 4vw, 2.4rem)' }}
+          >
+            {title}
+          </h1>
+          <p className="font-[family-name:var(--font-body)] text-base text-white/80 max-w-[52ch] leading-relaxed">
+            {intro}
+          </p>
+        </ContourPanel>
 
         {user && !user.emailVerified && (
           <div className="mb-8 rounded-[20px] border border-terracotta/40 bg-terracotta/10 px-5 py-4">

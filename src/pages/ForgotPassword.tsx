@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { ContourPanel } from '../components/ContourPattern';
 import SEO from '../components/SEO';
 import { authRequest } from '../lib/authClient';
 
@@ -94,15 +95,20 @@ export default function ForgotPassword() {
       />
       <section className="bg-cream pt-[120px] pb-[100px] min-h-screen">
         <div className="max-w-[460px] mx-auto px-5 md:px-6">
-          <div className="rounded-[20px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-6 py-7 md:px-8 md:py-9">
-            <h1 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-charcoal mb-2">
+          {/* Heading on the brand panel, form in the card below, the same
+              shape as the account page these flows are reached from. */}
+          <ContourPanel className="mb-6 px-6 py-7 md:px-8 md:py-8">
+            <h1 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-white mb-2">
               {token ? 'Choose a new password' : 'Reset your password'}
             </h1>
-            <p className="font-[family-name:var(--font-body)] text-sm text-charcoal/65 mb-6 leading-relaxed">
+            <p className="font-[family-name:var(--font-body)] text-sm text-white/80 leading-relaxed">
               {token
                 ? 'Enter a new password for your account. Resetting it ends every signed in session.'
                 : 'Enter the email address on your account and we will send a link to reset the password.'}
             </p>
+          </ContourPanel>
+
+          <div className="rounded-[20px] bg-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-6 py-7 md:px-8 md:py-9">
 
             {error && (
               <p

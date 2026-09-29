@@ -1,5 +1,6 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { ContourPanel } from '../components/ContourPattern';
 import SEO from '../components/SEO';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -34,124 +35,6 @@ const PANEL_COPY: Record<Role | 'login', { headline: string; text: string }> = {
     text: 'Search vetted talent, or book a consultation on growing your workforce.',
   },
 };
-
-// Contour clusters for the brand panel: every ring is a scaled, slightly
-// rotated copy of one shared path, so the set reads like hand-plotted
-// topography. Stroke colors come from the Tailwind brand tokens, and
-// vector-effect keeps every line crisp no matter how far it is scaled.
-const CONTOUR_CLUSTERS: {
-  cx: number;
-  cy: number;
-  strokeClass: string;
-  opacity: number;
-  rings: number[];
-  rotateStep: number;
-  /* A drift of a few user units, the seconds one pass of it takes, and where
-     in that pass the cluster starts. Slow and short on purpose: it should
-     register as a living page, not as something moving. */
-  drift: [x: number, y: number];
-  durationSeconds: number;
-  delaySeconds: number;
-}[] = [
-  {
-    cx: 424,
-    cy: 60,
-    strokeClass: 'stroke-brand-green',
-    opacity: 0.5,
-    rings: [2.8, 2.28, 1.82, 1.42, 1.06, 0.76, 0.5, 0.28],
-    rotateStep: 9,
-    drift: [7, -6],
-    durationSeconds: 84,
-    delaySeconds: -18,
-  },
-  {
-    cx: 36,
-    cy: 566,
-    strokeClass: 'stroke-mint',
-    opacity: 0.22,
-    rings: [2.2, 1.72, 1.3, 0.95, 0.64, 0.38],
-    rotateStep: -7,
-    drift: [-6, 6],
-    durationSeconds: 96,
-    delaySeconds: -51,
-  },
-  {
-    cx: -34,
-    cy: 238,
-    strokeClass: 'stroke-brand-green',
-    opacity: 0.34,
-    rings: [1.6, 1.16, 0.78, 0.45],
-    rotateStep: 11,
-    drift: [5, 5],
-    durationSeconds: 68,
-    delaySeconds: -7,
-  },
-  {
-    cx: 474,
-    cy: 432,
-    strokeClass: 'stroke-mint',
-    opacity: 0.26,
-    rings: [1.5, 1.06, 0.68, 0.36],
-    rotateStep: -13,
-    drift: [-4, -5],
-    durationSeconds: 108,
-    delaySeconds: -66,
-  },
-];
-
-/** Decorative topographic pattern behind the auth panel copy. */
-function AuthContourPattern() {
-  return (
-    <svg
-      className="absolute inset-0 z-0 h-full w-full"
-      viewBox="0 0 460 640"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <defs>
-        {/* One wobbly closed ring; every contour is a copy of this path. */}
-        <path
-          id="pga-auth-contour"
-          d="M 0 -100 C 62 -92 98 -48 96 6 C 94 58 74 84 24 98 C -26 111 -88 70 -96 12 C -103 -44 -54 -107 0 -100 Z"
-          vectorEffect="non-scaling-stroke"
-        />
-      </defs>
-      {CONTOUR_CLUSTERS.map((cluster, clusterIndex) => (
-        /* The outer group carries the drift and the inner one the transform
-           that places the rings, so the CSS transform never flattens a cluster
-           onto the origin. motion-reduce hands back the still pattern. */
-        <g
-          key={clusterIndex}
-          className="animate-contour-drift motion-reduce:animate-none"
-          style={
-            {
-              '--contour-drift-x': `${cluster.drift[0]}px`,
-              '--contour-drift-y': `${cluster.drift[1]}px`,
-              animationDuration: `${cluster.durationSeconds}s`,
-              animationDelay: `${cluster.delaySeconds}s`,
-            } as CSSProperties
-          }
-        >
-          <g
-            className={`fill-none ${cluster.strokeClass}`}
-            strokeOpacity={cluster.opacity}
-            strokeWidth={1.25}
-            strokeLinecap="round"
-          >
-            {cluster.rings.map((scale, ringIndex) => (
-              <use
-                key={ringIndex}
-                href="#pga-auth-contour"
-                transform={`translate(${cluster.cx} ${cluster.cy}) rotate(${cluster.rotateStep * ringIndex}) scale(${scale})`}
-              />
-            ))}
-          </g>
-        </g>
-      ))}
-    </svg>
-  );
-}
 
 const inputClass =
   'w-full rounded-xl border border-charcoal/20 bg-white px-4 py-3 font-[family-name:var(--font-body)] text-base text-charcoal placeholder:text-charcoal/40 transition-colors motion-reduce:transition-none focus:border-brand-green focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-1';
@@ -347,41 +230,40 @@ export default function Auth() {
         <div className="absolute inset-x-0 top-0 h-[100px] bg-deep-green" aria-hidden="true" />
         <div className="relative max-w-[1000px] mx-auto px-5 md:px-6 pt-[130px] pb-[70px]">
           <div className="grid gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_460px] min-[820px]:gap-8">
-            {/* Brand panel. An inline contour-line pattern in the brand greens
-                replaces the photograph, so /auth loads no external images at
-                all. Purely decorative, so it is hidden from assistive tech. */}
-            <aside className="relative overflow-hidden rounded-[20px] bg-deep-green text-white px-6 py-7 min-[820px]:px-10 min-[820px]:py-12 flex flex-col justify-start">
-              <AuthContourPattern />
-              <div
-                className="absolute inset-0 z-[1] bg-gradient-to-br from-deep-green/55 via-deep-green/25 to-brand-green/45"
-                aria-hidden="true"
-              />
-              <Link
-                to="/"
-                className="relative z-[2] inline-flex items-center gap-2.5 mb-5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            {/* Brand panel. The contour pattern is inline SVG, so /auth loads
+                no external images at all. */}
+            <aside className="min-[820px]:h-full">
+              <ContourPanel
+                variant="portrait"
+                className="h-full flex flex-col justify-start px-6 py-7 min-[820px]:px-10 min-[820px]:py-12"
               >
-                <img
-                  src="/images/icon-white.png"
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="h-9 w-9"
-                  loading="lazy"
-                />
-                <span className="font-[family-name:var(--font-body)] text-sm font-semibold tracking-wide">
-                  People Growth Africa
-                </span>
-              </Link>
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-2.5 mb-5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <img
+                    src="/images/icon-white.png"
+                    alt=""
+                    width={36}
+                    height={36}
+                    className="h-9 w-9"
+                    loading="lazy"
+                  />
+                  <span className="font-[family-name:var(--font-body)] text-sm font-semibold tracking-wide">
+                    People Growth Africa
+                  </span>
+                </Link>
 
-              <h1
-                className="relative z-[2] font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.2] mb-3"
-                style={{ fontSize: 'clamp(1.7rem, 3.4vw, 2.4rem)' }}
-              >
-                {panel.headline}
-              </h1>
-              <p className="relative z-[2] font-[family-name:var(--font-body)] text-white/80 text-sm md:text-base leading-relaxed max-w-[38ch]">
-                {panel.text}
-              </p>
+                <h1
+                  className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.2] mb-3"
+                  style={{ fontSize: 'clamp(1.7rem, 3.4vw, 2.4rem)' }}
+                >
+                  {panel.headline}
+                </h1>
+                <p className="font-[family-name:var(--font-body)] text-white/80 text-sm md:text-base leading-relaxed max-w-[38ch]">
+                  {panel.text}
+                </p>
+              </ContourPanel>
             </aside>
 
             {/* Form card */}
