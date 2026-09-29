@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConsultation } from '../hooks/useConsultation';
+import { useAuth } from '../hooks/useAuth';
+import { dashboardPath } from '../lib/authClient';
 import LogoIntroAnimation from './LogoIntroAnimation';
 
 const baseNavLinks = [
@@ -18,8 +20,13 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { openConsultation } = useConsultation();
+  const { status: authStatus, user } = useAuth();
 
   const isHome = location.pathname === '/';
+  const accountLink =
+    authStatus === 'signedIn' && user
+      ? { to: dashboardPath(user.role), label: 'Dashboard' }
+      : { to: '/auth#signup', label: 'Sign up / Log in' };
 
   // Include "Home" link when user is on any other page
   const currentNavLinks = [
@@ -119,6 +126,12 @@ export default function Navbar() {
               </Link>
             ),
           )}
+          <Link
+            to={accountLink.to}
+            className="font-[family-name:var(--font-body)] text-[0.95rem] font-medium text-white/85 hover:text-white transition-colors whitespace-nowrap"
+          >
+            {accountLink.label}
+          </Link>
           <button
             type="button"
             onClick={() => openConsultation()}
@@ -196,6 +209,13 @@ export default function Navbar() {
                   </Link>
                 ),
               )}
+              <Link
+                to={accountLink.to}
+                onClick={() => setMobileOpen(false)}
+                className="text-lg font-medium font-[family-name:var(--font-body)] py-1 text-white/85"
+              >
+                {accountLink.label}
+              </Link>
               <button
                 type="button"
                 onClick={() => {
