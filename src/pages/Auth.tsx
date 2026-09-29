@@ -229,11 +229,24 @@ export default function Auth() {
         <div className="absolute inset-x-0 top-0 h-[100px] bg-deep-green" aria-hidden="true" />
         <div className="relative max-w-[1000px] mx-auto px-5 md:px-6 pt-[130px] pb-[70px]">
           <div className="grid gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_460px] min-[820px]:gap-8">
-            {/* Brand panel */}
-            <aside className="rounded-[20px] bg-deep-green text-white px-6 py-7 min-[820px]:px-10 min-[820px]:py-12 flex flex-col justify-start">
+            {/* Brand panel. The photograph is the same one the home hero uses,
+                held well back under the brand green so it reads as texture and
+                keeps the headline contrast. Decorative, so no alt text. */}
+            <aside className="relative overflow-hidden rounded-[20px] bg-deep-green text-white px-6 py-7 min-[820px]:px-10 min-[820px]:py-12 flex flex-col justify-start">
+              <img
+                src="https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=1200&q=80&auto=format"
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 z-0 h-full w-full object-cover opacity-30"
+                loading="eager"
+              />
+              <div
+                className="absolute inset-0 z-[1] bg-gradient-to-br from-deep-green/92 via-deep-green/80 to-brand-green/65"
+                aria-hidden="true"
+              />
               <Link
                 to="/"
-                className="inline-flex items-center gap-2.5 mb-5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="relative z-[2] inline-flex items-center gap-2.5 mb-5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <img
                   src="/images/icon-white.png"
@@ -249,12 +262,12 @@ export default function Auth() {
               </Link>
 
               <h1
-                className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.2] mb-3"
+                className="relative z-[2] font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.2] mb-3"
                 style={{ fontSize: 'clamp(1.7rem, 3.4vw, 2.4rem)' }}
               >
                 {panel.headline}
               </h1>
-              <p className="font-[family-name:var(--font-body)] text-white/80 text-sm md:text-base leading-relaxed max-w-[38ch]">
+              <p className="relative z-[2] font-[family-name:var(--font-body)] text-white/80 text-sm md:text-base leading-relaxed max-w-[38ch]">
                 {panel.text}
               </p>
             </aside>
