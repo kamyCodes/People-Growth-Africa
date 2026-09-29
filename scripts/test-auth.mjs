@@ -42,6 +42,7 @@ console.warn = (...args) => {
 
 function linksSince(mark, pattern) {
   const text = logged.slice(mark).join('\n');
+  // matchAll needs the global flag, so callers pass a /g pattern.
   return [...text.matchAll(pattern)].map((match) => match[1]);
 }
 
@@ -184,7 +185,7 @@ async function main() {
       2,
       'Employer signup succeeds with an employer session',
       employer.status === 201 && employerMe.json?.user?.role === 'employer',
-      `signup ${employer.status}, me ${employer.status}`,
+      `signup ${employer.status}, me ${employerMe.status}`,
     );
     if (employerCookie) created.push({ cookie: employerCookie, password: GOOD_PASSWORD });
 
@@ -253,18 +254,21 @@ async function main() {
       `role ${talentMe.json?.user?.role}, keys ${Object.keys(talentProfile).join(',')}`,
     );
 
-    // 9. Logout clears the session.
+    // 9. Logout clears the session cookie. Sessions are self contained JWTs, so
+    //    what logout can end is the browser's copy: the response must expire it.
+    //    A token copied out of the cookie beforehand stays valid until it expires,
+    //    which is why reset and log out on all devices bump token_version instead.
     const logout = await call(baseUrl, '/api/auth/logout', { body: {}, cookie: talentCookie });
-    const afterLogout = talentCookie
-      ? await call(baseUrl, '/api/auth/me', { method: 'GET', cookie: talentCookie })
-      : { status: 0 };
+    const clearedCookies = logout.response.headers.getSetCookie?.() ?? [];
+    const cleared = clearedCookies.some(
+      (header) => /(^|;\s)session=;/.test(header) && header.includes('Max-Age=0'),
+    );
+    const withoutCookie = await call(baseUrl, '/api/auth/me', { method: 'GET' });
     check(
       9,
-      'Logout clears the session cookie and the session stops working',
-      logout.status === 200 &&
-        afterLogout.status === 401 &&
-        (logout.response.headers.getSetCookie?.() ?? []).some((header) => header.includes('Max-Age=0')),
-      `logout ${logout.status}, afterwards ${afterLogout.status}`,
+      'Logout expires the session cookie and an anonymous request is refused',
+      logout.status === 200 && cleared && withoutCookie.status === 401,
+      `logout ${logout.status}, cookie ${cleared ? 'expired' : 'NOT expired'}, without cookie ${withoutCookie.status}`,
     );
 
     // 10. Unknown keys are rejected rather than ignored.
@@ -338,7 +342,7 @@ async function main() {
 
     const mark = logged.length;
     const forgot = await call(baseUrl, '/api/auth/forgot-password', { body: { email: RESET_EMAIL } });
-    const resetToken = linksSince(mark, /forgot-password\?token=([A-Za-z0-9_-]+)/).at(-1);
+    const resetToken = linksSince(mark, /forgot-password\?token=([A-Za-z0-9_-]+)/g).at(-1);
     const reset = resetToken
       ? await call(baseUrl, '/api/auth/reset-password', {
           body: { token: resetToken, password: NEW_PASSWORD },

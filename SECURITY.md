@@ -26,6 +26,9 @@ secret, how to inspect the audit log and how to report a problem.
 - The token carries `token_version`, which is re-checked against the database on every
   authenticated request, together with the account's role. Raising the version ends every session
   at once, which is what the password reset flow and "log out on all devices" do.
+- Logging out expires the browser's cookie. Sessions are self contained, so a token copied out of
+  the cookie before that moment stays valid until it expires; reset and log out on all devices are
+  the actions that revoke a token that is already in someone else's hands.
 - The server refuses to start when `JWT_SECRET` is missing or shorter than 32 characters.
 
 **Requests and input**
@@ -150,3 +153,7 @@ you when a fix ships.
   impractical to use for enumeration.
 - Preview deployments share the production database unless a Neon branch is attached, so test
   signups would be real rows.
+- A plain logout cannot revoke a token that was already copied off the device, because the session
+  is a self contained JWT with no server side record. Closing that gap means storing one row per
+  session and deleting it on logout, which is cheap here because every authenticated request
+already reads the database once to check `token_version`.

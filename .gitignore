@@ -13,9 +13,11 @@ dist-ssr
 *.local
 
 # Environment files. Real values live in Vercel; only the placeholder file is
-# committed. `*.local` above already covers .env.development.local.
+# committed. `*.local` above already covers .env.development.local, and the
+# exception has to come last so `vercel link` adding a broad rule cannot quietly
+# start ignoring the template.
 .env
-.env.*
+.env*
 !.env.example
 
 # Editor directories and files
@@ -28,3 +30,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Added by `vercel link`: project and team ids for this checkout.
+.vercel
