@@ -240,11 +240,12 @@ export default function Auth() {
         <div className="absolute inset-x-0 top-0 h-[100px] bg-deep-green" aria-hidden="true" />
         <div className="relative max-w-[1000px] mx-auto px-5 md:px-6 pt-[130px] pb-[70px]">
           <div className="grid gap-6 min-[820px]:grid-cols-[minmax(0,1fr)_460px] min-[820px]:gap-8">
-            {/* Brand panel. The contour pattern is inline SVG, so /auth loads
-                no external images at all. */}
+            {/* Brand panel. The ribbon artwork is inline SVG, so /auth loads no
+                external images at all. Dimensions, padding and copy unchanged. */}
             <aside className="min-[820px]:h-full">
               <ContourPanel
                 variant="portrait"
+                art="ribbons"
                 className="h-full flex flex-col justify-start px-6 py-7 min-[820px]:px-10 min-[820px]:py-12"
               >
                 <Link

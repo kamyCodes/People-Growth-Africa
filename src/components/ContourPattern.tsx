@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import EmeraldRibbon from './EmeraldRibbon';
 
 /**
  * The drifting contour lines behind the account panels: the auth column, the
@@ -168,11 +169,11 @@ export default function ContourPattern({
            onto the origin. motion-reduce hands back the still pattern. */
         <g
           key={clusterIndex}
-          className="animate-contour-drift motion-reduce:animate-none"
+          className="animate-panel-drift motion-reduce:animate-none"
           style={
             {
-              '--contour-drift-x': `${cluster.drift[0]}px`,
-              '--contour-drift-y': `${cluster.drift[1]}px`,
+              '--panel-drift-x': `${cluster.drift[0]}px`,
+              '--panel-drift-y': `${cluster.drift[1]}px`,
               animationDuration: `${cluster.durationSeconds}s`,
               animationDelay: `${cluster.delaySeconds}s`,
             } as CSSProperties
@@ -199,26 +200,38 @@ export default function ContourPattern({
 }
 
 /**
- * A deep green panel with the contour pattern behind its content, so every
- * account surface carries the same texture. Content sits above the pattern and
- * the wash that keeps text contrast.
+ * A deep green panel with artwork behind its content, so every account surface
+ * carries the same texture. Content sits above the artwork and the wash that
+ * keeps text contrast.
+ *
+ * `art` picks the piece: the ribbon artwork is composed for the tall column on
+ * the account page, the contour pattern for wide headings. They need different
+ * washes because they carry their own light in different places, and the wash
+ * exists to hold the copy's contrast, which is what was measured.
  */
 export function ContourPanel({
   children,
   variant = 'band',
+  art = 'contours',
   className = '',
 }: {
   children: ReactNode;
   variant?: Variant;
+  art?: 'contours' | 'ribbons';
   className?: string;
 }) {
+  const wash =
+    art === 'ribbons'
+      ? 'from-deep-green/45 via-deep-green/10 to-transparent'
+      : 'from-deep-green/55 via-deep-green/25 to-brand-green/45';
+
   return (
     <div
       className={`relative overflow-hidden rounded-[20px] bg-deep-green text-white ${className}`}
     >
-      <ContourPattern variant={variant} />
+      {art === 'ribbons' ? <EmeraldRibbon /> : <ContourPattern variant={variant} />}
       <div
-        className="absolute inset-0 z-[1] bg-gradient-to-br from-deep-green/55 via-deep-green/25 to-brand-green/45"
+        className={`absolute inset-0 z-[1] bg-gradient-to-br ${wash}`}
         aria-hidden="true"
       />
       <div className="relative z-[2]">{children}</div>
