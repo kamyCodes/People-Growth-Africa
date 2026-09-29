@@ -18,6 +18,20 @@
   --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
   --shadow-card-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
   --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.10);
+
+  /* The contour lines on the auth panel drift a few user units at a time over
+     a minute or more, slow enough to read as terrain rather than movement.
+     Each cluster sets its own direction, duration and phase inline. */
+  --animate-contour-drift: contour-drift 80s ease-in-out infinite alternate;
+
+  @keyframes contour-drift {
+    from {
+      transform: translate(0, 0);
+    }
+    to {
+      transform: translate(var(--contour-drift-x, 6px), var(--contour-drift-y, -5px));
+    }
+  }
 }
 
 /* Base styles */

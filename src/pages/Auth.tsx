@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { useAuth } from '../hooks/useAuth';
@@ -46,6 +46,12 @@ const CONTOUR_CLUSTERS: {
   opacity: number;
   rings: number[];
   rotateStep: number;
+  /* A drift of a few user units, the seconds one pass of it takes, and where
+     in that pass the cluster starts. Slow and short on purpose: it should
+     register as a living page, not as something moving. */
+  drift: [x: number, y: number];
+  durationSeconds: number;
+  delaySeconds: number;
 }[] = [
   {
     cx: 424,
@@ -54,6 +60,9 @@ const CONTOUR_CLUSTERS: {
     opacity: 0.5,
     rings: [2.8, 2.28, 1.82, 1.42, 1.06, 0.76, 0.5, 0.28],
     rotateStep: 9,
+    drift: [7, -6],
+    durationSeconds: 84,
+    delaySeconds: -18,
   },
   {
     cx: 36,
@@ -62,6 +71,9 @@ const CONTOUR_CLUSTERS: {
     opacity: 0.22,
     rings: [2.2, 1.72, 1.3, 0.95, 0.64, 0.38],
     rotateStep: -7,
+    drift: [-6, 6],
+    durationSeconds: 96,
+    delaySeconds: -51,
   },
   {
     cx: -34,
@@ -70,6 +82,9 @@ const CONTOUR_CLUSTERS: {
     opacity: 0.34,
     rings: [1.6, 1.16, 0.78, 0.45],
     rotateStep: 11,
+    drift: [5, 5],
+    durationSeconds: 68,
+    delaySeconds: -7,
   },
   {
     cx: 474,
@@ -78,6 +93,9 @@ const CONTOUR_CLUSTERS: {
     opacity: 0.26,
     rings: [1.5, 1.06, 0.68, 0.36],
     rotateStep: -13,
+    drift: [-4, -5],
+    durationSeconds: 108,
+    delaySeconds: -66,
   },
 ];
 
@@ -100,20 +118,35 @@ function AuthContourPattern() {
         />
       </defs>
       {CONTOUR_CLUSTERS.map((cluster, clusterIndex) => (
+        /* The outer group carries the drift and the inner one the transform
+           that places the rings, so the CSS transform never flattens a cluster
+           onto the origin. motion-reduce hands back the still pattern. */
         <g
           key={clusterIndex}
-          className={`fill-none ${cluster.strokeClass}`}
-          strokeOpacity={cluster.opacity}
-          strokeWidth={1.25}
-          strokeLinecap="round"
+          className="animate-contour-drift motion-reduce:animate-none"
+          style={
+            {
+              '--contour-drift-x': `${cluster.drift[0]}px`,
+              '--contour-drift-y': `${cluster.drift[1]}px`,
+              animationDuration: `${cluster.durationSeconds}s`,
+              animationDelay: `${cluster.delaySeconds}s`,
+            } as CSSProperties
+          }
         >
-          {cluster.rings.map((scale, ringIndex) => (
-            <use
-              key={ringIndex}
-              href="#pga-auth-contour"
-              transform={`translate(${cluster.cx} ${cluster.cy}) rotate(${cluster.rotateStep * ringIndex}) scale(${scale})`}
-            />
-          ))}
+          <g
+            className={`fill-none ${cluster.strokeClass}`}
+            strokeOpacity={cluster.opacity}
+            strokeWidth={1.25}
+            strokeLinecap="round"
+          >
+            {cluster.rings.map((scale, ringIndex) => (
+              <use
+                key={ringIndex}
+                href="#pga-auth-contour"
+                transform={`translate(${cluster.cx} ${cluster.cy}) rotate(${cluster.rotateStep * ringIndex}) scale(${scale})`}
+              />
+            ))}
+          </g>
         </g>
       ))}
     </svg>
