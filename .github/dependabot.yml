@@ -1,0 +1,27 @@
+# Keeps the auth dependencies (jose, bcryptjs, zod, the Resend and Upstash
+# clients) on patched versions. Middleware and JWT libraries have had auth
+# bypass bugs in the past, so minor and patch updates are grouped to keep the
+# noise low rather than waiting for a manual check.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      auth-and-runtime:
+        patterns:
+          - 'jose'
+          - 'bcryptjs'
+          - 'zod'
+          - '@neondatabase/*'
+          - '@upstash/*'
+          - resend
+      dev-tooling:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: monthly

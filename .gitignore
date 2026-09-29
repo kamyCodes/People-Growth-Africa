@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Environment files. Real values live in Vercel; only the placeholder file is
+# committed. `*.local` above already covers .env.development.local.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
