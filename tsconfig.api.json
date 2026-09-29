@@ -3,14 +3,17 @@
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.api.tsbuildinfo",
     "target": "es2023",
     "lib": ["ES2023"],
-    "module": "esnext",
+    "module": "nodenext",
     "types": ["node"],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
-    /* Bundler mode: Vercel bundles each function with esbuild */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    /* Node's own ESM resolution, which is how the platform runs these files:
+       each file in api/ is compiled to a .js neighbour and Node resolves the
+       specifiers at runtime, so every relative import has to name its file.
+       Leaving this as bundler resolution is what let an extensionless import
+       ship and take down every /api/auth/* route with ERR_MODULE_NOT_FOUND. */
+    "moduleResolution": "nodenext",
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,

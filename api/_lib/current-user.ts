@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { ApiError } from './http';
-import { clearSessionCookie, readSession } from './session';
-import { findSessionUserById } from './db';
-import type { SessionUserRow } from './db';
+import { ApiError } from './http.js';
+import { clearSessionCookie, readSession } from './session.js';
+import { findSessionUserById } from './db.js';
+import type { SessionUserRow } from './db.js';
 
 /**
  * Resolves the signed in user for a protected endpoint. A session is only

@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { ApiError, headerValue } from './http';
-import type { Role } from './db';
+import { ApiError, headerValue } from './http.js';
+import type { Role } from './db.js';
 
 /**
  * Sessions are a signed JWT in an httpOnly cookie. The token carries the user's

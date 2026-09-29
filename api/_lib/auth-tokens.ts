@@ -1,6 +1,6 @@
-import { consumeAuthToken, insertAuthToken } from './db';
-import type { TokenType } from './db';
-import { hashToken, newToken } from './security';
+import { consumeAuthToken, insertAuthToken } from './db.js';
+import type { TokenType } from './db.js';
+import { hashToken, newToken } from './security.js';
 
 /**
  * Verification and reset links carry a random token. Only its SHA-256 hash is

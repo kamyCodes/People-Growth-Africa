@@ -1,8 +1,8 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
-import { ApiError } from './http';
-import { counterKey } from './security';
-import { recordAuthEvent } from './audit';
+import { ApiError } from './http.js';
+import { counterKey } from './security.js';
+import { recordAuthEvent } from './audit.js';
 
 /**
  * Rate limiting for credential endpoints. Upstash is used when it is configured

@@ -13,6 +13,7 @@
 import { randomBytes } from 'node:crypto';
 import { SignJWT } from 'jose';
 import { loadEnvFiles, startApiServer } from './api-server.mjs';
+import { checkApiImports } from './check-api-imports.mjs';
 
 const EMAIL_PREFIX = `test-auth-${Date.now().toString(36)}`;
 const TALENT_EMAIL = `${EMAIL_PREFIX}-talent@example.com`;
@@ -157,6 +158,16 @@ async function main() {
     // this one hit a 429.
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  }
+
+  // Every route in api/ has to import cleanly as a native ES module before any
+  // request is worth making: the deployment runs them that way, and a missing
+  // file extension takes out all of them at once. Stopping here beats watching
+  // it surface as sixteen unrelated HTTP failures.
+  const imports = await checkApiImports({ quiet: true });
+  if (!imports.ok) {
+    console.error(`\n${imports.summary}\n\nRun \`node scripts/check-api-imports.mjs\` for the details.\n`);
+    process.exit(1);
   }
 
   const server = isLocal ? await startApiServer({ quiet: true }) : null;

@@ -20,13 +20,16 @@ import { register, registerHooks } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-// Teaches this process to resolve `./http` to ./http.ts the way Vercel's bundler
-// does. Node strips the types on import, so the endpoint modules run as written.
+// Teaches this process to resolve the `./http.js` specifiers api/ is written
+// with back to the ./http.ts sources, mirroring the compiled .js files that sit
+// beside each other in the deployed function. Node strips the types on import,
+// so the endpoint modules run as written while the specifiers stay exactly as
+// they are on disk. Extensionless imports are deliberately left to fail.
 if (typeof registerHooks === 'function') {
   const resolveWithTs = (specifier, context, nextResolve) => {
-    if (specifier.startsWith('.') && !/\.[cm]?[jt]s$/i.test(specifier)) {
+    if (specifier.startsWith('.') && specifier.endsWith('.js')) {
       try {
-        return nextResolve(`${specifier}.ts`, context);
+        return nextResolve(`${specifier.slice(0, -3)}.ts`, context);
       } catch {
         // Fall through to the normal resolution.
       }

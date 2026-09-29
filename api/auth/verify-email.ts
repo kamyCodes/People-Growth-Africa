@@ -1,10 +1,10 @@
-import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http';
-import { parseInput, verifyEmailSchema } from '../_lib/validation';
-import { markEmailVerified } from '../_lib/db';
-import { hashToken } from '../_lib/security';
-import { redeemToken } from '../_lib/auth-tokens';
-import { enforceRateLimit } from '../_lib/ratelimit';
-import { recordAuthEvent } from '../_lib/audit';
+import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http.js';
+import { parseInput, verifyEmailSchema } from '../_lib/validation.js';
+import { markEmailVerified } from '../_lib/db.js';
+import { hashToken } from '../_lib/security.js';
+import { redeemToken } from '../_lib/auth-tokens.js';
+import { enforceRateLimit } from '../_lib/ratelimit.js';
+import { recordAuthEvent } from '../_lib/audit.js';
 
 export default endpoint({ methods: ['POST'], csrf: true }, async (req, res) => {
   const ip = clientIp(req);

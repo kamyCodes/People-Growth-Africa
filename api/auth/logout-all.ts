@@ -1,8 +1,8 @@
-import { clientIp, endpoint, sendJson } from '../_lib/http';
-import { bumpTokenVersion } from '../_lib/db';
-import { requireSession } from '../_lib/current-user';
-import { clearSessionCookie } from '../_lib/session';
-import { recordAuthEvent } from '../_lib/audit';
+import { clientIp, endpoint, sendJson } from '../_lib/http.js';
+import { bumpTokenVersion } from '../_lib/db.js';
+import { requireSession } from '../_lib/current-user.js';
+import { clearSessionCookie } from '../_lib/session.js';
+import { recordAuthEvent } from '../_lib/audit.js';
 
 /**
  * Ends every session for the account, on every device, by raising the user's

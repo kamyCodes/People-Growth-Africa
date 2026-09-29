@@ -1,5 +1,5 @@
-import { logAuthEvent } from './db';
-import { hashIp } from './security';
+import { logAuthEvent } from './db.js';
+import { hashIp } from './security.js';
 
 /**
  * Security relevant events (signup, login, failed login, password reset,

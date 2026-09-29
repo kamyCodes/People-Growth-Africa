@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ApiError } from './http';
+import { ApiError } from './http.js';
 
 /**
  * Server side validation is the real check. These schemas are strict, so a
