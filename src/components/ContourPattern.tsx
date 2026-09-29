@@ -8,7 +8,7 @@ import EmeraldRibbon from './EmeraldRibbon';
  * The pattern is pure inline SVG, so no page that uses it needs an external
  * image. It is decorative everywhere it appears, so it stays hidden from
  * assistive technology, and it holds still for anyone who asked for less
- * motion (see --animate-contour-drift in src/index.css).
+ * motion (see --animate-panel-drift in src/index.css).
  */
 
 type Cluster = {
@@ -18,9 +18,9 @@ type Cluster = {
   opacity: number;
   rings: number[];
   rotateStep: number;
-  /* A drift of a few user units, the seconds one pass of it takes, and where
-     in that pass the cluster starts. Slow and short on purpose: it should
-     register as a living page, not as something moving. */
+  /* Drift distance in user units, the seconds one pass takes, and where in
+     that pass the cluster starts. Around half a pixel a second: clearly
+     alive if you look, never busy enough to pull attention from the copy. */
   drift: [x: number, y: number];
   durationSeconds: number;
   delaySeconds: number;
@@ -47,8 +47,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.5,
         rings: [2.8, 2.28, 1.82, 1.42, 1.06, 0.76, 0.5, 0.28],
         rotateStep: 9,
-        drift: [7, -6],
-        durationSeconds: 84,
+        drift: [24, -20],
+        durationSeconds: 28,
         delaySeconds: -18,
       },
       {
@@ -58,8 +58,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.22,
         rings: [2.2, 1.72, 1.3, 0.95, 0.64, 0.38],
         rotateStep: -7,
-        drift: [-6, 6],
-        durationSeconds: 96,
+        drift: [-20, 20],
+        durationSeconds: 34,
         delaySeconds: -51,
       },
       {
@@ -69,8 +69,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.34,
         rings: [1.6, 1.16, 0.78, 0.45],
         rotateStep: 11,
-        drift: [5, 5],
-        durationSeconds: 68,
+        drift: [16, 16],
+        durationSeconds: 26,
         delaySeconds: -7,
       },
       {
@@ -80,8 +80,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.26,
         rings: [1.5, 1.06, 0.68, 0.36],
         rotateStep: -13,
-        drift: [-4, -5],
-        durationSeconds: 108,
+        drift: [-14, -17],
+        durationSeconds: 36,
         delaySeconds: -66,
       },
     ],
@@ -96,8 +96,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.5,
         rings: [2.5, 2.05, 1.65, 1.3, 0.98, 0.68, 0.4],
         rotateStep: 9,
-        drift: [7, -5],
-        durationSeconds: 84,
+        drift: [24, -17],
+        durationSeconds: 28,
         delaySeconds: -18,
       },
       {
@@ -107,8 +107,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.22,
         rings: [2.1, 1.68, 1.28, 0.92, 0.58],
         rotateStep: -7,
-        drift: [-6, 5],
-        durationSeconds: 96,
+        drift: [-20, 17],
+        durationSeconds: 34,
         delaySeconds: -51,
       },
       {
@@ -118,8 +118,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.26,
         rings: [2.3, 1.85, 1.45, 1.08, 0.74, 0.44],
         rotateStep: 11,
-        drift: [-5, -6],
-        durationSeconds: 108,
+        drift: [-17, -20],
+        durationSeconds: 36,
         delaySeconds: -66,
       },
       {
@@ -129,8 +129,8 @@ const VARIANTS: Record<Variant, { viewBox: string; clusters: Cluster[] }> = {
         opacity: 0.34,
         rings: [1.7, 1.24, 0.84, 0.48],
         rotateStep: -13,
-        drift: [5, 5],
-        durationSeconds: 68,
+        drift: [16, 16],
+        durationSeconds: 26,
         delaySeconds: -7,
       },
     ],

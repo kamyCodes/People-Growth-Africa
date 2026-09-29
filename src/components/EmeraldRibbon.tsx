@@ -16,18 +16,20 @@ import type { CSSProperties } from 'react';
  *     size the page renders.
  *
  * The layers are grouped so a slow, seamless drift can be applied to them
- * (see --animate-panel-drift in src/index.css): each group moves a few units on
- * its own long pass, which reads as the ribbons flowing rather than animating.
- * Every group stops moving for prefers-reduced-motion.
+ * (see --animate-panel-drift in src/index.css): each group travels a few dozen
+ * units on its own pass at well under a pixel a second ... visible as a gentle
+ * flow if you look at the panel, never as something moving. Every group stops
+ * moving for prefers-reduced-motion.
  */
 
 type Drift = { x: number; y: number; durationSeconds: number; delaySeconds: number };
 
-/** Slow enough to read as a gentle flow, never as movement. */
+/** Roughly 0.5 to 1 pixel per second: slow enough to stay calm, fast enough
+ *  that the panel reads as alive rather than as a static image. */
 const DRIFT: Record<'blooms' | 'sweep' | 'counter', Drift> = {
-  blooms: { x: 12, y: -10, durationSeconds: 124, delaySeconds: -33 },
-  sweep: { x: 7, y: -6, durationSeconds: 84, delaySeconds: -18 },
-  counter: { x: -6, y: 5, durationSeconds: 96, delaySeconds: -51 },
+  blooms: { x: 45, y: -36, durationSeconds: 44, delaySeconds: -33 },
+  sweep: { x: 24, y: -20, durationSeconds: 30, delaySeconds: -18 },
+  counter: { x: -18, y: 15, durationSeconds: 38, delaySeconds: -51 },
 };
 
 function driftProps({ x, y, durationSeconds, delaySeconds }: Drift) {
