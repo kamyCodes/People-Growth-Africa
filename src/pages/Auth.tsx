@@ -70,7 +70,12 @@ export default function Auth() {
   useEffect(() => {
     const applyHash = () => {
       const hash = window.location.hash.replace('#', '');
-      if (hash === 'login' || hash === 'signup') setTab(hash);
+      if (hash !== 'login' && hash !== 'signup') return;
+      // Going back or following a link to the other tab is a tab switch like
+      // any other, so the messages from the previous tab must not come along.
+      setTab(hash);
+      setFormError(null);
+      setFieldErrors({});
     };
     applyHash();
     window.addEventListener('hashchange', applyHash);
@@ -112,10 +117,15 @@ export default function Auth() {
     const errors: Record<string, string> = {};
     const trimmedName = name.trim();
 
-    if (!trimmedName) {
-      errors.name = role === 'employer' ? 'Enter the contact person.' : 'Enter your full name.';
-    } else if (trimmedName.length > 100) {
-      errors.name = 'Name must be 100 characters or fewer.';
+    // Signing in collects an email and a password only, so the name is checked
+    // only on the tab that actually asks for it. Checking it on both tabs made
+    // every log in fail with "Enter your full name." and no field to type it in.
+    if (isSignup) {
+      if (!trimmedName) {
+        errors.name = role === 'employer' ? 'Enter the contact person.' : 'Enter your full name.';
+      } else if (trimmedName.length > 100) {
+        errors.name = 'Name must be 100 characters or fewer.';
+      }
     }
 
     if (isSignup && role === 'employer') {
