@@ -2,6 +2,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { ApiError } from './http';
 import { counterKey } from './security';
+import { recordAuthEvent } from './audit';
 
 /**
  * Rate limiting for credential endpoints. Upstash is used when it is configured
@@ -112,6 +113,16 @@ export async function enforceRateLimit(options: RateLimitCheck): Promise<void> {
   }
 
   if (!allowed) {
+    // A refused attempt is worth a row of its own: it is the earliest sign of
+    // someone hammering the endpoints. For the per IP buckets the counter key
+    // is derived exactly like an audit IP hash, so these rows line up with the
+    // login_failed rows from the same source. Everything else is stored
+    // without an address, because the key is a pseudonym for an email, a token
+    // or a user id rather than an IP.
+    await recordAuthEvent(`rate_limited:${name}`, {
+      ipHash: name.endsWith('-ip') ? identifier : null,
+    });
+
     const error = new ApiError(
       429,
       'rate_limited',

@@ -8,13 +8,18 @@ import { hashIp } from './security';
  */
 export async function recordAuthEvent(
   event: string,
-  options: { userId?: string | null; ip?: string | undefined } = {},
+  options: {
+    userId?: string | null;
+    ip?: string | undefined;
+    /** Already hashed, for callers that never held the address itself. */
+    ipHash?: string | null;
+  } = {},
 ): Promise<void> {
   try {
     await logAuthEvent({
       userId: options.userId ?? null,
       event,
-      ipHash: hashIp(options.ip),
+      ipHash: options.ipHash ?? hashIp(options.ip),
     });
   } catch (error) {
     // A missing audit row must never turn into a failed signup or login, but it

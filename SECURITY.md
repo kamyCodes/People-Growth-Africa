@@ -51,8 +51,11 @@ secret, how to inspect the audit log and how to report a problem.
 - Identifiers are pseudonymised before they reach the limiter, so neither Redis nor memory holds a
   raw email address or IP.
 - `auth_events` records signup, login success and failure, logout, log out everywhere, password
-  reset requested and completed, email verified, verification resent, account deleted and refused
-  attempts, with a keyed hash of the IP address instead of the address itself.
+  reset requested and completed, email verified, verification resent and account deleted, with a
+  keyed hash of the IP address instead of the address itself. A refused attempt is recorded as
+  `rate_limited:<bucket>`, for example `rate_limited:login-ip`: the per IP buckets carry the same
+  keyed hash as the other rows so they line up, and the others carry no address at all because
+  their key stands for an email, a token or a user id rather than an IP.
 - Passwords, tokens, cookies and request bodies are never logged. Error lines mask anything that
   looks like an email address.
 
