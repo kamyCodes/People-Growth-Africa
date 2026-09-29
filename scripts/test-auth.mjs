@@ -31,6 +31,17 @@ function check(number, description, passed, detail = '') {
   console.log(`${mark}  ${String(number).padStart(2)}. ${description}${detail ? ` (${detail})` : ''}`);
 }
 
+/**
+ * For the checks that need something the runner cannot obtain on its own, for
+ * example the reset link when the suite runs against a deployment and the link
+ * only reaches that deployment's logs. Reported as skipped, with the reason and
+ * the flag that supplies it, so it never reads as a pass or a failure.
+ */
+function skipCheck(number, description, reason) {
+  results.push({ number, description, passed: true, skipped: true, detail: reason });
+  console.log(`SKIP  ${String(number).padStart(2)}. ${description} (${reason})`);
+}
+
 // --- email capture -----------------------------------------------------------
 // Without RESEND_API_KEY the emails are printed instead of sent, which is how
 // this script recovers the verification and reset links.
@@ -342,7 +353,15 @@ async function main() {
 
     const mark = logged.length;
     const forgot = await call(baseUrl, '/api/auth/forgot-password', { body: { email: RESET_EMAIL } });
-    const resetToken = linksSince(mark, /forgot-password\?token=([A-Za-z0-9_-]+)/g).at(-1);
+    // Locally the link is printed, so it can be read straight out of the log.
+    // Against a deployment it goes to that deployment's logs instead, and the
+    // caller can paste it in with --reset-link.
+    const suppliedLink =
+      process.argv.find((argument) => argument.startsWith('--reset-link='))?.split('=')[1] ??
+      process.env.AUTH_TEST_RESET_LINK;
+    const resetToken =
+      linksSince(mark, /forgot-password\?token=([A-Za-z0-9_-]+)/g).at(-1) ??
+      (suppliedLink ? new URL(suppliedLink).searchParams.get('token') : null);
     const reset = resetToken
       ? await call(baseUrl, '/api/auth/reset-password', {
           body: { token: resetToken, password: NEW_PASSWORD },
@@ -359,12 +378,23 @@ async function main() {
     });
     if (newPassword.cookie) created.push({ cookie: newPassword.cookie, password: NEW_PASSWORD });
 
-    check(
-      13,
-      'After a password reset the old session and the old password both fail, the new password works',
-      reset.status === 200 && stale.status === 401 && oldPassword.status === 401 && newPassword.status === 200,
-      `forgot ${forgot.status}, reset ${reset.status}, stale session ${stale.status}, old ${oldPassword.status}, new ${newPassword.status}`,
-    );
+    if (resetToken) {
+      check(
+        13,
+        'After a password reset the old session and the old password both fail, the new password works',
+        reset.status === 200 &&
+          stale.status === 401 &&
+          oldPassword.status === 401 &&
+          newPassword.status === 200,
+        `forgot ${forgot.status}, reset ${reset.status}, stale session ${stale.status}, old ${oldPassword.status}, new ${newPassword.status}`,
+      );
+    } else {
+      skipCheck(
+        13,
+        'After a password reset the old session and the old password both fail',
+        'no reset link captured; pass --reset-link=<full url>, or run locally where the link is printed',
+      );
+    }
 
     // Extras: the two remaining behaviours the brief lists in other steps.
     const anonymousForgot = await call(baseUrl, '/api/auth/forgot-password', {
@@ -397,8 +427,11 @@ async function main() {
     if (server) await server.close();
   }
 
-  const passed = results.filter((result) => result.passed).length;
-  console.log(`\n${passed}/${results.length} checks passed`);
+  const skipped = results.filter((result) => result.skipped).length;
+  const passed = results.length - failures - skipped;
+  console.log(
+    `\n${passed}/${results.length} checks passed${skipped > 0 ? ` (${skipped} skipped)` : ''}`,
+  );
   if (failures > 0) {
     console.log('\nFailing checks:');
     for (const result of results.filter((entry) => !entry.passed)) {
