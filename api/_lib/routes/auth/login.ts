@@ -1,10 +1,10 @@
-import { ApiError, clientIp, endpoint, parseJsonBody, safeRedirect, sendJson } from '../_lib/http.js';
-import { loginSchema, parseInput } from '../_lib/validation.js';
-import { findUserByEmail } from '../_lib/db.js';
-import { spendPasswordTime, verifyPassword } from '../_lib/security.js';
-import { assertSessionConfigured, createSessionToken, setSessionCookie } from '../_lib/session.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { ApiError, clientIp, endpoint, parseJsonBody, safeRedirect, sendJson } from '../../http.js';
+import { loginSchema, parseInput } from '../../validation.js';
+import { findUserByEmail } from '../../db.js';
+import { spendPasswordTime, verifyPassword } from '../../security.js';
+import { assertSessionConfigured, createSessionToken, setSessionCookie } from '../../session.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 export default endpoint({ methods: ['POST'], csrf: true }, async (req, res) => {
   const ip = clientIp(req);

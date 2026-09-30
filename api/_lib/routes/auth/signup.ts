@@ -5,20 +5,20 @@ import {
   parseJsonBody,
   safeRedirect,
   sendJson,
-} from '../_lib/http.js';
-import { parseInput, signupSchema } from '../_lib/validation.js';
+} from '../../http.js';
+import { parseInput, signupSchema } from '../../validation.js';
 import {
   createEmployerUser,
   createTalentUser,
   isUniqueViolation,
   type Role,
-} from '../_lib/db.js';
-import { hashPassword, isPasswordBreached } from '../_lib/security.js';
-import { assertSessionConfigured, createSessionToken, setSessionCookie } from '../_lib/session.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
-import { issueToken } from '../_lib/auth-tokens.js';
-import { sendVerificationEmail } from '../_lib/email.js';
+} from '../../db.js';
+import { hashPassword, isPasswordBreached } from '../../security.js';
+import { assertSessionConfigured, createSessionToken, setSessionCookie } from '../../session.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
+import { issueToken } from '../../auth-tokens.js';
+import { sendVerificationEmail } from '../../email.js';
 
 export default endpoint({ methods: ['POST'], csrf: true }, async (req, res) => {
   const ip = clientIp(req);

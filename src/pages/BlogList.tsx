@@ -3,16 +3,21 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import AnimateOnScroll from '../components/AnimateOnScroll';
 import SEO from '../components/SEO';
+import { authRequest } from '../lib/authClient';
 import { blogPosts, categories, getFeaturedPost, type BlogPost } from '../data/posts';
 
 const POSTS_PER_PAGE = 6;
+
+/** 'sent' only ever means the server answered; nothing is faked here. */
+type NewsletterState = 'idle' | 'sending' | 'sent' | 'error';
 
 export default function BlogList() {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(POSTS_PER_PAGE);
   const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const [newsletterState, setNewsletterState] = useState<NewsletterState>('idle');
+  const [newsletterNotice, setNewsletterNotice] = useState('');
 
   const featured = getFeaturedPost();
 
@@ -81,13 +86,30 @@ export default function BlogList() {
     e.preventDefault();
   };
 
-  const handleSubscribe = (e: FormEvent) => {
+  const handleSubscribe = async (e: FormEvent) => {
     e.preventDefault();
-    if (newsletterEmail.trim()) {
-      setSubscribed(true);
+    const email = newsletterEmail.trim();
+    if (!email || newsletterState === 'sending') return;
+
+    setNewsletterState('sending');
+    setNewsletterNotice('');
+
+    const result = await authRequest<{ ok: boolean; message?: string }>(
+      '/api/newsletter/subscribe',
+      { body: { email } },
+    );
+
+    if (result.ok) {
+      setNewsletterState('sent');
+      setNewsletterNotice(
+        result.data.message ?? 'Check your inbox to confirm your subscription.',
+      );
       setNewsletterEmail('');
-      setTimeout(() => setSubscribed(false), 4000);
+      return;
     }
+
+    setNewsletterState('error');
+    setNewsletterNotice(result.failure.fields?.email ?? result.failure.error);
   };
 
   return (
@@ -109,15 +131,14 @@ export default function BlogList() {
               Insights for Growing<br />African Businesses
             </h1>
             <p className="font-[family-name:var(--font-body)] text-[1.1rem] text-white/75 max-w-[560px] mx-auto leading-relaxed mb-10">
-              Expert perspectives on HR, people management, and building high-performing teams across the continent.
+              Practical, plain-spoken guidance on HR, people management and building strong teams in African businesses.
             </p>
           </AnimateOnScroll>
 
           <AnimateOnScroll delay={0.1}>
             <form onSubmit={handleSearch} className="flex max-w-[520px] mx-auto bg-white/10 border border-white/15 rounded-full overflow-hidden backdrop-blur-sm">
               <input
-                type="text"
-                placeholder="Search articles..."
+                type="text"                  placeholder="Search articles…"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setVisibleCount(POSTS_PER_PAGE); }}
                 className="flex-1 px-6 py-4 bg-transparent border-none outline-none text-white font-[family-name:var(--font-body)] text-base placeholder:text-white/50"
@@ -137,12 +158,13 @@ export default function BlogList() {
       {/* ── Category Filters ──────────────────────────── */}
       <section className="pt-12 bg-white">
         <div className="max-w-[1200px] mx-auto px-6">
-          <AnimateOnScroll className="flex flex-wrap justify-center gap-3">
+          {/* One row you flick through on a phone; the centered wrap returns at md. */}
+          <AnimateOnScroll className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-3 overflow-x-auto md:overflow-visible scrollbar-none [&::-webkit-scrollbar]:hidden -mx-6 px-6 md:mx-0 md:px-0">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => { setActiveCategory(cat.id); setVisibleCount(POSTS_PER_PAGE); setTimeout(() => { document.getElementById('blog-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); }}
-                className={`inline-flex items-center px-6 py-2.5 rounded-full border-[1.5px] font-[family-name:var(--font-body)] text-[0.88rem] font-medium cursor-pointer transition-all duration-300 whitespace-nowrap ${
+                className={`inline-flex shrink-0 items-center px-6 py-2.5 rounded-full border-[1.5px] font-[family-name:var(--font-body)] text-[0.88rem] font-medium cursor-pointer transition-all duration-300 whitespace-nowrap ${
                   activeCategory === cat.id
                     ? 'bg-deep-green border-deep-green text-white'
                     : 'bg-transparent border-charcoal/12 text-charcoal/65 hover:border-brand-green hover:text-brand-green'
@@ -178,7 +200,7 @@ export default function BlogList() {
                     <span className="inline-flex px-3.5 py-1.5 bg-mint text-deep-green font-[family-name:var(--font-body)] text-[0.78rem] font-semibold rounded-full uppercase tracking-wider">
                       {categories.find((c) => c.id === featured.category)?.label}
                     </span>
-                    <span className="font-[family-name:var(--font-body)] text-[0.85rem] text-charcoal/50">{new Date(featured.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                    <span className="font-[family-name:var(--font-body)] text-[0.85rem] text-charcoal/50">{new Date(featured.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                     <span className="font-[family-name:var(--font-body)] text-[0.85rem] text-charcoal/50 before:content-['·'] before:mr-4">{featured.readTime} min read</span>
                   </div>
                   <h2 className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.2] mb-4 group-hover:text-deep-green transition-colors"
@@ -268,20 +290,37 @@ export default function BlogList() {
                 type="email"
                 placeholder="Enter your email address"
                 value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
+                onChange={(e) => {
+                  setNewsletterEmail(e.target.value);
+                  // A new address is a new attempt, so the last answer goes away.
+                  if (newsletterState !== 'idle') {
+                    setNewsletterState('idle');
+                    setNewsletterNotice('');
+                  }
+                }}
                 required
                 className="flex-1 px-6 py-4 border-[1.5px] border-charcoal/12 rounded-full font-[family-name:var(--font-body)] text-base bg-white text-charcoal outline-none focus:border-brand-green transition-colors placeholder:text-charcoal/40"
                 aria-label="Email address for newsletter"
               />
-              <button type="submit" className={`px-8 py-4 border-none rounded-full font-[family-name:var(--font-body)] text-[0.95rem] font-semibold cursor-pointer transition-all duration-300 whitespace-nowrap ${
-                subscribed
+              <button type="submit" disabled={newsletterState === 'sending'} className={`px-8 py-4 border-none rounded-full font-[family-name:var(--font-body)] text-[0.95rem] font-semibold cursor-pointer transition-all duration-300 whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-70 ${
+                newsletterState === 'sent'
                   ? 'bg-brand-green text-white'
                   : 'bg-deep-green text-white hover:bg-terracotta hover:-translate-y-0.5'
               }`}>
-                {subscribed ? 'Subscribed ✓' : 'Subscribe'}
+                {newsletterState === 'sending' ? 'Sending…' : newsletterState === 'sent' ? 'Thanks ✓' : 'Subscribe'}
               </button>
             </form>
-            <p className="font-[family-name:var(--font-body)] text-[0.8rem] text-charcoal/40 mt-4">No spam. Unsubscribe anytime. We respect your inbox.</p>
+            <p className="font-[family-name:var(--font-body)] text-[0.8rem] text-charcoal/40 mt-4">No spam. The newsletter and nothing else, every two weeks.</p>
+            {/* Mounted from the start so a screen reader announces the server's answer when it lands. */}
+            <p
+              role="status"
+              aria-live="polite"
+              className={`font-[family-name:var(--font-body)] text-[0.85rem] mt-2 min-h-[1.25rem] ${
+                newsletterState === 'error' ? 'text-terracotta' : 'text-deep-green'
+              }`}
+            >
+              {newsletterNotice}
+            </p>
           </AnimateOnScroll>
         </div>
       </section>
@@ -342,7 +381,7 @@ function BlogCard({ post, index, onTagClick }: { post: BlogPost; index: number; 
             <div className="flex items-center gap-3">
               <span className="font-[family-name:var(--font-body)] text-[0.78rem] text-charcoal/45">{post.readTime} min</span>
               <span className="font-[family-name:var(--font-body)] text-[0.78rem] text-charcoal/45">
-                {new Date(post.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {new Date(post.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             </div>
           </div>

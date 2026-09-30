@@ -196,3 +196,136 @@ export async function logAuthEvent(input: {
     input.ipHash,
   ]);
 }
+
+export type NewsletterStatus = 'pending' | 'confirmed' | 'unsubscribed';
+
+export type LeadContact = {
+  name: string;
+  email: string;
+  phone: string | null;
+  organisation: string;
+};
+
+/**
+ * A stored lead. The id comes back so the notification email can name the row
+ * the team will find, and so a caller can tell a write from a no-op.
+ */
+export async function insertEventRegistration(
+  input: LeadContact & {
+    eventSlug: string;
+    role: string | null;
+    question: string | null;
+  },
+): Promise<string | null> {
+  const row = await queryOne<{ id: string }>(
+    `INSERT INTO event_registrations (event_slug, name, email, phone, organisation, role, question)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id`,
+    [
+      input.eventSlug,
+      input.name,
+      input.email,
+      input.phone,
+      input.organisation,
+      input.role,
+      input.question,
+    ],
+  );
+  return row?.id ?? null;
+}
+
+export async function insertConsultationBooking(
+  input: LeadContact & {
+    teamSize: string | null;
+    service: string | null;
+    meetingFormat: string;
+    preferredDate: string;
+    preferredSlot: string;
+    notes: string | null;
+  },
+): Promise<string | null> {
+  const row = await queryOne<{ id: string }>(
+    `INSERT INTO consultation_bookings
+       (name, email, phone, organisation, team_size, service, meeting_format,
+        preferred_date, preferred_slot, notes)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING id`,
+    [
+      input.name,
+      input.email,
+      input.phone,
+      input.organisation,
+      input.teamSize,
+      input.service,
+      input.meetingFormat,
+      input.preferredDate,
+      input.preferredSlot,
+      input.notes,
+    ],
+  );
+  return row?.id ?? null;
+}
+
+export async function insertEnquiry(input: {
+  name: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  message: string;
+  source: string;
+}): Promise<string | null> {
+  const row = await queryOne<{ id: string }>(
+    `INSERT INTO enquiries (name, email, phone, subject, message, source)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     RETURNING id`,
+    [input.name, input.email, input.phone, input.subject, input.message, input.source],
+  );
+  return row?.id ?? null;
+}
+
+/**
+ * Adds an address to the list, or refreshes its confirmation link when the row
+ * has not been confirmed yet. A confirmed row is left alone and no row comes
+ * back, which is the signal not to send another confirmation email. One
+ * statement, so two simultaneous signups cannot create two rows for one address
+ * and the returned row is always the one that was actually written.
+ */
+export async function upsertNewsletterSubscriber(input: {
+  email: string;
+  tokenHash: string;
+  ttlSeconds: number;
+}): Promise<{ status: NewsletterStatus } | null> {
+  return queryOne<{ status: NewsletterStatus }>(
+    `INSERT INTO newsletter_subscribers (email, status, confirm_token_hash, confirm_expires_at)
+     VALUES ($1, 'pending', $2, now() + make_interval(secs => $3))
+     ON CONFLICT (email) DO UPDATE
+       SET status = 'pending',
+           confirm_token_hash = EXCLUDED.confirm_token_hash,
+           confirm_expires_at = EXCLUDED.confirm_expires_at
+       WHERE newsletter_subscribers.status <> 'confirmed'
+     RETURNING status`,
+    [input.email, input.tokenHash, input.ttlSeconds],
+  );
+}
+
+/**
+ * Turns a pending subscription into a confirmed one and clears the link it was
+ * confirmed with. Single statement, so a link cannot be redeemed twice even if
+ * two requests arrive at the same moment, and an expired link confirms nothing.
+ * Returns the address it confirmed, or null when the link was spent or stale.
+ */
+export async function confirmNewsletterSubscriber(tokenHash: string): Promise<string | null> {
+  const row = await queryOne<{ email: string }>(
+    `UPDATE newsletter_subscribers
+        SET status = 'confirmed',
+            confirmed_at = now(),
+            confirm_token_hash = NULL,
+            confirm_expires_at = NULL
+      WHERE confirm_token_hash = $1
+        AND status = 'pending'
+        AND confirm_expires_at > now()
+      RETURNING email`,
+    [tokenHash],
+  );
+  return row?.email ?? null;
+}

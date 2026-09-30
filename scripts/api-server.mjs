@@ -4,10 +4,11 @@
  *
  *   node scripts/api-server.mjs --port 4173      # start the server
  *
- * Why this exists: the real deployment gives every file in api/ its own
- * serverless endpoint, and the Vercel CLI is the usual way to reproduce that
- * locally. This script does the small part of that job the auth tests and a
- * browser check need, so `npm run test:auth` works without any extra tooling.
+ * Why this exists: the real deployment turns api/ into serverless endpoints -
+ * one of them now, api/[...path].ts, which looks its handler up in the table at
+ * api/_lib/routes/index.ts - and the Vercel CLI is the usual way to reproduce
+ * that locally. This script does the small part of that job the auth tests and
+ * a browser check need, so `npm run test:auth` works without any extra tooling.
  * It is development only: nothing here is deployed.
  *
  * Node strips the TypeScript types on import, which is why api/ is written to
@@ -91,9 +92,15 @@ export function loadEnvFiles({ quiet = false } = {}) {
   return loaded;
 }
 
-/** Every module in api/, keyed by the URL Vercel would expose it at. */
-function discoverRoutes() {
+/**
+ * Every module in api/ the platform would expose, keyed by the URL Vercel
+ * serves it at. A `[...name].ts` file answers for any path under its directory,
+ * which is how the whole API is reached through one function; anything else is
+ * an exact path. Files behind an `_` are shared code and are not endpoints.
+ */
+function discoverFunctions() {
   const routes = new Map();
+  const catchAlls = [];
   const apiDir = path.join(root, 'api');
 
   const walk = (directory) => {
@@ -103,14 +110,23 @@ function discoverRoutes() {
         walk(fullPath);
         continue;
       }
-      if (!entry.name.endsWith('.ts') || entry.name.startsWith('_')) continue;
+      if (!entry.name.endsWith('.ts')) continue;
       const relative = path.relative(root, fullPath).split(path.sep).join('/');
+      // Anything behind an `_` path segment is shared code. Vercel does not
+      // expose api/_lib, so this must not either: serving it here would put
+      // endpoints in front of the tests that production does not have.
+      if (relative.split('/').some((segment) => segment.startsWith('_'))) continue;
+      if (/^\[\.\.\.[A-Za-z0-9_-]+\]\.ts$/.test(entry.name)) {
+        const directory = path.posix.dirname(relative);
+        catchAlls.push({ prefix: directory === '.' ? '' : `/${directory}`, file: fullPath });
+        continue;
+      }
       routes.set(`/${relative.replace(/\.ts$/, '')}`, fullPath);
     }
   };
 
   if (existsSync(apiDir)) walk(apiDir);
-  return routes;
+  return { routes, catchAlls };
 }
 
 function shimResponse(res) {
@@ -203,7 +219,7 @@ export async function startApiServer({ port = 0, serveStatic = true, quiet = fal
     }
   }
 
-  const routes = discoverRoutes();
+  const { routes, catchAlls } = discoverFunctions();
   const distDir = path.join(root, 'dist');
   const cache = new Map();
 
@@ -211,7 +227,9 @@ export async function startApiServer({ port = 0, serveStatic = true, quiet = fal
     const url = new URL(req.url ?? '/', 'http://localhost');
     const pathname = decodeURIComponent(url.pathname);
 
-    const file = routes.get(pathname);
+    const file =
+      routes.get(pathname) ??
+      catchAlls.find(({ prefix }) => pathname.startsWith(`${prefix}/`))?.file;
     if (file) {
       shimResponse(res);
       req.query = Object.fromEntries(url.searchParams);
@@ -256,8 +274,11 @@ export async function startApiServer({ port = 0, serveStatic = true, quiet = fal
   const address = server.address();
   const origin = `http://localhost:${typeof address === 'object' && address ? address.port : port}`;
   if (!quiet) {
+    const functions = routes.size + catchAlls.length;
     console.log(`Auth API ready on ${origin}`);
-    console.log(`${routes.size} endpoints from api/, ${existsSync(distDir) ? 'serving dist/' : 'no dist/ build found'}`);
+    console.log(
+      `${functions} function${functions === 1 ? '' : 's'} from api/, ${existsSync(distDir) ? 'serving dist/' : 'no dist/ build found'}`,
+    );
   }
 
   return {

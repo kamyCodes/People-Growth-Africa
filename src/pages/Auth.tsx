@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ContourPanel } from '../components/ContourPattern';
+import Select from '../components/Select';
 import SEO from '../components/SEO';
+import { COUNTRIES, TALENT_FIELDS } from '../data/options';
 import { useAuth } from '../hooks/useAuth';
 import {
   AVAILABILITY_OPTIONS,
@@ -17,8 +19,8 @@ type Tab = 'signup' | 'login';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const ROLE_CARDS: { value: Role; title: string; description: string }[] = [
-  { value: 'talent', title: 'Talent', description: 'Looking for a place to be allocated' },
-  { value: 'employer', title: 'Employer', description: 'Hiring talent or need consultation' },
+  { value: 'talent', title: 'Talent', description: 'Find roles that match your skills' },
+  { value: 'employer', title: 'Employer', description: 'Hire talent or book a consultation' },
 ];
 
 const PANEL_COPY: Record<Role | 'login', { headline: string; text: string }> = {
@@ -32,7 +34,7 @@ const PANEL_COPY: Record<Role | 'login', { headline: string; text: string }> = {
   },
   employer: {
     headline: 'Find the people your team needs.',
-    text: 'Search vetted talent, or book a consultation on growing your workforce.',
+    text: 'Find vetted talent, or book a consultation on growing your team.',
   },
 };
 
@@ -134,7 +136,9 @@ export default function Auth() {
     }
 
     if (isSignup && role === 'talent') {
-      if (!field.trim()) errors.field = 'Enter your field or main skill.';
+      // Both of these are selects now, so the only way to fail the first check
+      // is to leave the placeholder option in place.
+      if (!field.trim()) errors.field = 'Select your field or main skill.';
       else if (field.trim().length > 100) errors.field = 'Field must be 100 characters or fewer.';
       if (country.trim().length > 60) errors.country = 'Country must be 60 characters or fewer.';
     }
@@ -248,10 +252,10 @@ export default function Auth() {
                 art="ribbons"
                 className="h-full flex flex-col justify-start px-6 py-7 min-[820px]:px-10 min-[820px]:py-12"
               >
-                <Link
-                  to="/"
-                  className="inline-flex items-center gap-2.5 mb-5 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                >
+                {/* Brand lockup, not a control: it sat inside the form card's
+                    panel and read as the page's own heading, so making it a
+                    link to the home page tempted people away mid-signup. */}
+                <div className="inline-flex items-center gap-2.5 mb-5">
                   <img
                     src="/images/icon-white.png"
                     alt=""
@@ -263,7 +267,7 @@ export default function Auth() {
                   <span className="font-[family-name:var(--font-body)] text-sm font-semibold tracking-wide">
                     People Growth Africa
                   </span>
-                </Link>
+                </div>
 
                 <h1
                   className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.2] mb-3"
@@ -376,6 +380,9 @@ export default function Auth() {
                           name="name"
                           type="text"
                           autoComplete="name"
+                          placeholder={
+                            role === 'employer' ? 'e.g. Ngozi Okafor' : 'e.g. Adebayo Oladele'
+                          }
                           value={name}
                           onChange={(event) => setName(event.target.value)}
                           className={inputClass}
@@ -399,6 +406,7 @@ export default function Auth() {
                             name="company"
                             type="text"
                             autoComplete="organization"
+                            placeholder="e.g. Sterling Ventures"
                             value={company}
                             onChange={(event) => setCompany(event.target.value)}
                             className={inputClass}
@@ -425,6 +433,7 @@ export default function Auth() {
                           autoComplete="email"
                           autoCapitalize="none"
                           spellCheck={false}
+                          placeholder="name@company.com"
                           value={email}
                           onChange={(event) => setEmail(event.target.value)}
                           className={inputClass}
@@ -440,7 +449,7 @@ export default function Auth() {
 
                       {role === 'employer' ? (
                         <fieldset className="mb-4">
-                          <legend className={labelClass}>What do you need?</legend>
+                          <legend className={labelClass}>What do you need help with?</legend>
                           <div className="flex flex-col gap-2.5">
                             {NEED_OPTIONS.map((option) => (
                               <label
@@ -467,68 +476,50 @@ export default function Auth() {
                       ) : (
                         <>
                           <div className="mb-4">
-                            <label className={labelClass} htmlFor="auth-field">
-                              Field or main skill
-                            </label>
-                            <input
+                            {/* A select rather than a free text box: the list is
+                                what the dashboard and any future matching would
+                                read, so it should not be a spelling lottery. */}
+                            <Select
                               id="auth-field"
                               name="field"
-                              type="text"
+                              label="Field or main skill"
+                              placeholder="Select your field or main skill"
+                              options={TALENT_FIELDS}
                               autoComplete="off"
-                              placeholder="e.g. Data analysis, Nursing, Sales"
+                              size="lg"
                               value={field}
-                              onChange={(event) => setField(event.target.value)}
-                              className={inputClass}
-                              aria-invalid={Boolean(fieldErrors.field)}
-                              aria-describedby={fieldErrors.field ? 'auth-field-error' : undefined}
+                              onChange={setField}
+                              error={fieldErrors.field}
                             />
-                            {fieldErrors.field && (
-                              <p id="auth-field-error" className={helpClass}>
-                                {fieldErrors.field}
-                              </p>
-                            )}
                           </div>
 
                           <div className="mb-4">
-                            <label className={labelClass} htmlFor="auth-country">
-                              Country
-                            </label>
-                            <input
+                            <Select
                               id="auth-country"
                               name="country"
-                              type="text"
+                              label="Country"
+                              placeholder="Select your country"
+                              options={COUNTRIES}
                               autoComplete="country-name"
+                              size="lg"
                               value={country}
-                              onChange={(event) => setCountry(event.target.value)}
-                              className={inputClass}
-                              aria-invalid={Boolean(fieldErrors.country)}
-                              aria-describedby={fieldErrors.country ? 'auth-country-error' : undefined}
+                              onChange={setCountry}
+                              error={fieldErrors.country}
+                              hint="Optional. It tells us where you are when we match you with roles."
                             />
-                            {fieldErrors.country && (
-                              <p id="auth-country-error" className={helpClass}>
-                                {fieldErrors.country}
-                              </p>
-                            )}
                           </div>
 
                           <div className="mb-4">
-                            <label className={labelClass} htmlFor="auth-availability">
-                              Availability
-                            </label>
-                            <select
+                            <Select
                               id="auth-availability"
                               name="availability"
+                              label="Availability"
+                              placeholder="Select availability"
+                              options={AVAILABILITY_OPTIONS}
+                              size="lg"
                               value={availability}
-                              onChange={(event) => setAvailability(event.target.value)}
-                              className={inputClass}
-                            >
-                              <option value="">Select availability</option>
-                              {AVAILABILITY_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={setAvailability}
+                            />
                           </div>
                         </>
                       )}
@@ -543,6 +534,7 @@ export default function Auth() {
                             name="password"
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="new-password"
+                            placeholder="At least 8 characters"
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
                             className={`${inputClass} pr-20`}
@@ -621,6 +613,7 @@ export default function Auth() {
                           autoComplete="email"
                           autoCapitalize="none"
                           spellCheck={false}
+                          placeholder="name@company.com"
                           value={email}
                           onChange={(event) => setEmail(event.target.value)}
                           className={inputClass}
@@ -644,6 +637,7 @@ export default function Auth() {
                             name="password"
                             type={showPassword ? 'text' : 'password'}
                             autoComplete="current-password"
+                            placeholder="Your password"
                             value={password}
                             onChange={(event) => setPassword(event.target.value)}
                             className={`${inputClass} pr-20`}

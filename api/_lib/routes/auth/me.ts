@@ -1,6 +1,6 @@
-import { endpoint, sendJson } from '../_lib/http.js';
-import { requireSession } from '../_lib/current-user.js';
-import { getEmployerProfile, getTalentProfile } from '../_lib/db.js';
+import { endpoint, sendJson } from '../../http.js';
+import { requireSession } from '../../current-user.js';
+import { getEmployerProfile, getTalentProfile } from '../../db.js';
 
 export default endpoint({ methods: ['GET'] }, async (req, res) => {
   const user = await requireSession(req, res);

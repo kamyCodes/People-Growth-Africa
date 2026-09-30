@@ -13,10 +13,10 @@ import { useConsultation } from '../hooks/useConsultation';
 /* ── Data ────────────────────────────────────────────────────────── */
 
 const stats = [
-  { number: '10–100', label: 'Employee range of businesses served' },
+  { number: '10–100', label: 'Employees at the businesses we serve' },
   { number: '15+', label: 'Specialised HR service areas' },
-  { number: '2025', label: 'Year founded' },
-  { number: 'Nigeria', label: 'Location' },
+  { number: '2025', label: 'Founded' },
+  { number: 'Nigeria', label: 'Where we work' },
 ];
 
 const vmCards = [
@@ -45,7 +45,7 @@ const vmCards = [
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
-    text: 'Growth-stage businesses across Nigeria and Africa, agribusinesses, SMEs, and startups, typically 10 to 100 employees, ready to move from informal to intentional people practices.',
+    text: 'Growing businesses across Nigeria and Africa — agribusinesses, SMEs and startups with 10 to 100 employees — ready to move from informal management to proper people practices.',
   },
 ];
 
@@ -113,7 +113,7 @@ export default function Home() {
     <>
       <SEO
         title="People Growth Africa | HR & Organisational Consulting"
-        description="People Growth Africa helps growing businesses across Nigeria and Africa build the people systems and cultures that make sustainable growth possible."
+        description="People Growth Africa helps growing businesses across Nigeria and Africa build the HR systems and cultures that make growth sustainable."
       />
 
       {/* ── Hero ─────────────────────────────────────── */}
@@ -142,7 +142,7 @@ export default function Home() {
               className="font-[family-name:var(--font-body)] text-white/80 max-w-[560px] leading-relaxed mb-10"
               style={{ fontSize: 'clamp(1rem, 1.8vw, 1.2rem)' }}
             >
-              We are the partner that growing businesses call when they have outgrown informal people management but do not yet have the systems to match their ambition. Structured, practical HR built for the realities of the continent.
+              You have outgrown informal people management. We build the HR systems that let your business and your people grow together.
             </p>
           </AnimateOnScroll>
 
@@ -153,13 +153,13 @@ export default function Home() {
                 onClick={() => openConsultation()}
                 className="inline-flex items-center gap-2 px-9 py-4 bg-brand-green text-white font-[family-name:var(--font-body)] font-semibold rounded-full hover:bg-terracotta transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(196,119,59,0.3)] cursor-pointer"
               >
-                Schedule Consultation →
+                Book a free consultation →
               </button>
               <Link
                 to="/events"
                 className="inline-flex items-center gap-2 px-9 py-4 bg-transparent text-white font-[family-name:var(--font-body)] font-semibold rounded-full border-2 border-white/30 hover:border-white hover:bg-white/10 transition-all duration-300"
               >
-                Explore Webinars &amp; Mentorships
+                Explore webinars &amp; mentorships
               </Link>
             </div>
           </AnimateOnScroll>
@@ -234,7 +234,7 @@ export default function Home() {
               15 Specialised HR<br />Service Areas
             </h2>
             <p className="font-[family-name:var(--font-body)] text-[1.05rem] text-charcoal/65 max-w-[600px] mx-auto leading-relaxed">
-              Click any specialized service area below to review deliverables, timelines, target organization profiles, and strategic business outcomes.
+              Pick a service to see what you get, how long it usually takes and the businesses it suits.
             </p>
           </AnimateOnScroll>
 
@@ -271,7 +271,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
             <AnimateOnScroll>
               <p className="font-[family-name:var(--font-body)] text-[0.8rem] font-semibold uppercase tracking-[0.12em] text-brand-green mb-3">
-                Events &amp; Programs
+                Events &amp; Programmes
               </p>
               <h2
                 className="font-[family-name:var(--font-heading)] font-semibold text-charcoal leading-[1.15]"
@@ -363,17 +363,17 @@ export default function Home() {
               className="font-[family-name:var(--font-heading)] font-semibold text-charcoal mb-3"
               style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.8rem)' }}
             >
-              We are waiting for your success story
+              Be our next success story
             </p>
             <p className="font-[family-name:var(--font-body)] text-sm md:text-base text-charcoal/60 leading-relaxed mb-6">
-              Partner with us and let your organizational transformation become the next benchmark of African enterprise excellence.
+              Work with us, and let your growth story become the next one we tell.
             </p>
             <button
               type="button"
               onClick={() => openConsultation()}
               className="inline-flex items-center gap-2 px-6 py-2.5 bg-deep-green text-white text-xs font-semibold rounded-full hover:bg-brand-green transition-all cursor-pointer"
             >
-              Start Your Transformation
+              Talk to an advisor
             </button>
           </div>
         </div>
@@ -442,7 +442,7 @@ export default function Home() {
         <div className="relative z-10 max-w-[1200px] mx-auto px-6">
           <AnimateOnScroll>
             <span className="inline-block px-4 py-1.5 rounded-full bg-white/10 text-mint text-xs font-semibold uppercase tracking-wider mb-4 backdrop-blur-sm">
-              Complimentary Strategic Diagnostic &bull; 30-Minute Session
+              Free 30-minute strategic diagnostic
             </span>
             <h2
               className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.15] mb-5 max-w-[760px] mx-auto"
@@ -452,9 +452,10 @@ export default function Home() {
             </h2>
           </AnimateOnScroll>
 
-          <AnimateOnScroll delay={0.1}>
-            <p className="font-[family-name:var(--font-body)] text-white/80 text-base md:text-lg max-w-[620px] mx-auto leading-relaxed mb-8">
-              Let&apos;s discuss where your people systems stand today and where they need to be. Schedule a free diagnostic on our interactive calendar or chat directly with an advisor on WhatsApp.
+          <AnimateOnScroll delay={0.1}>            <p
+              className="font-[family-name:var(--font-body)] text-white/80 text-base md:text-lg max-w-[620px] mx-auto leading-relaxed mb-8"
+            >
+              Let&apos;s look at where your people systems stand today and where they need to be. Book a free 30-minute diagnostic, or message an advisor on WhatsApp.
             </p>
 
             {/* Operating Hours Summary */}
@@ -478,13 +479,13 @@ export default function Home() {
                 onClick={() => openConsultation()}
                 className="inline-flex items-center gap-2 px-9 py-4 bg-terracotta text-white font-[family-name:var(--font-body)] text-sm font-semibold rounded-full hover:bg-brand-green transition-all duration-300 hover:-translate-y-0.5 shadow-lg cursor-pointer"
               >
-                Schedule Free Consultation →
+                Book a free consultation →
               </button>
               <Link
                 to="/consultation"
                 className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white font-[family-name:var(--font-body)] text-sm font-semibold rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300"
               >
-                Open Full Page Booking Form
+                See the full booking form
               </Link>
             </div>
           </AnimateOnScroll>

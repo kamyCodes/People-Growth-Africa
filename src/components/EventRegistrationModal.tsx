@@ -1,6 +1,7 @@
 import { useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { EventItem } from '../data/events';
+import { leadFailureMessage, submitEventRegistration } from '../lib/leadClient';
 
 interface EventRegistrationModalProps {
   event: EventItem | null;
@@ -19,6 +20,7 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,13 +32,28 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
 
   if (!event) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setError('');
+
+    const result = await submitEventRegistration({
+      eventSlug: event.slug,
+      name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      organisation: formData.organization,
+      role: formData.role,
+      question: formData.question,
+    });
+
+    setIsSubmitting(false);
+    if (result.ok) {
       setIsConfirmed(true);
-    }, 800);
+      return;
+    }
+    setError(leadFailureMessage(result.failure, 'email'));
   };
 
   const downloadCalendarFile = () => {
@@ -77,20 +94,29 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative z-10 bg-white rounded-[24px] max-w-[620px] w-full max-h-[90vh] overflow-y-auto shadow-elevated border border-charcoal/10"
       >
-        {/* Header */}
-        <div className="bg-deep-green p-6 md:p-8 text-white relative">
+        {/* Close Button: sticky so it stays reachable while the form scrolls.
+            The wrapper has no height, so the button floats over the header
+            instead of pushing it down. */}
+        <div className="pointer-events-none sticky top-0 z-30 flex h-0 justify-end">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer transition-all"
+            className="pointer-events-auto mt-4 mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-deep-green shadow-md ring-1 ring-charcoal/10 transition-colors motion-reduce:transition-none hover:bg-mint focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green cursor-pointer"
           >
-            <svg className="w-4 h-4 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24">
+            <svg
+              className="h-4 w-4 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
+        </div>
 
+        {/* Header */}
+        <div className="bg-deep-green p-6 md:p-8 text-white relative">
           <span className="inline-block px-3 py-1 rounded-full bg-mint text-deep-green text-xs font-semibold uppercase tracking-wider mb-2">
             {event.typeLabel}
           </span>
@@ -118,10 +144,10 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
                   </svg>
                 </div>
                 <h4 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-charcoal mb-2">
-                  Registration Confirmed
+                  Registration received
                 </h4>
                 <p className="text-charcoal/70 text-sm leading-relaxed mb-6">
-                  Thank you, <strong>{formData.fullName}</strong>. A calendar invite and direct session link have been generated for <strong>{formData.email}</strong>.
+                  Thank you, <strong>{formData.fullName}</strong>. Your place is saved and our team has your details. We will email your joining link to <strong>{formData.email}</strong> before the session.
                 </p>
 
                 <div className="bg-cream/70 rounded-[14px] p-5 text-left text-xs mb-6 space-y-2 border border-charcoal/10">
@@ -137,14 +163,14 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
                     onClick={downloadCalendarFile}
                     className="px-6 py-2.5 bg-deep-green text-white text-xs font-semibold rounded-full hover:bg-brand-green transition-all"
                   >
-                    Add to Calendar (.ics)
+                    Add to calendar (.ics)
                   </button>
                   <button
                     type="button"
                     onClick={onClose}
                     className="px-6 py-2.5 bg-cream text-charcoal text-xs font-semibold rounded-full hover:bg-charcoal/10 transition-all border border-charcoal/15"
                   >
-                    Close Window
+                    Close
                   </button>
                 </div>
               </motion.div>
@@ -157,13 +183,13 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
                 className="space-y-4"
               >
                 <p className="text-xs md:text-sm text-charcoal/70 leading-relaxed mb-4">
-                  Complete the quick registration form below to secure your seat and receive the agenda briefing.
+                  Fill in the short form below to reserve your place and receive the agenda.
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor={`${formId}-name`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                      Full Name *
+                      Full name *
                     </label>
                     <input
                       id={`${formId}-name`}
@@ -178,7 +204,7 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
 
                   <div>
                     <label htmlFor={`${formId}-email`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                      Work Email *
+                      Work email *
                     </label>
                     <input
                       id={`${formId}-email`}
@@ -207,7 +233,7 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
 
                   <div>
                     <label htmlFor={`${formId}-org`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                      Organization / Company *
+                      Organisation / company *
                     </label>
                     <input
                       id={`${formId}-org`}
@@ -223,7 +249,7 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
 
                 <div>
                   <label htmlFor={`${formId}-role`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                    Your Role / Job Title
+                    Your role or job title
                   </label>
                   <input
                     id={`${formId}-role`}
@@ -237,7 +263,7 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
 
                 <div>
                   <label htmlFor={`${formId}-question`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                    Specific Question for the Speaker (Optional)
+                    A question for the speaker (optional)
                   </label>
                   <textarea
                     id={`${formId}-question`}
@@ -249,6 +275,15 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
                   />
                 </div>
 
+                {error && (
+                  <p
+                    role="alert"
+                    className="rounded-[10px] border border-terracotta/30 bg-terracotta/10 px-3.5 py-2.5 text-xs text-terracotta"
+                  >
+                    {error}
+                  </p>
+                )}
+
                 <div className="pt-2">
                   <button
                     type="submit"
@@ -256,13 +291,13 @@ export default function EventRegistrationModal({ event, onClose }: EventRegistra
                     className="w-full py-3.5 px-6 bg-brand-green text-white font-semibold rounded-full hover:bg-terracotta transition-all text-sm cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting
-                      ? 'Confirming Registration...'
+                      ? 'Sending your details…'
                       : event.type === 'mentorship'
-                      ? 'Submit Mentorship Application'
-                      : 'Complete Free RSVP'}
+                      ? 'Apply for a place'
+                      : 'Reserve my free place'}
                   </button>
                   <p className="text-center text-[0.7rem] text-charcoal/50 mt-2">
-                    Direct access links and session calendar files will be delivered immediately to your email.
+                    We will email your joining link before the session.
                   </p>
                 </div>
               </motion.form>

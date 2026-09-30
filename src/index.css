@@ -33,6 +33,23 @@
       transform: translate(var(--panel-drift-x, 6px), var(--panel-drift-y, -5px));
     }
   }
+
+  /* Phones reveal the header logo with a plain fade and scale: one element,
+     transform and opacity only, so the compositor runs the whole thing and the
+     main thread never paints a frame of it. Kept in step with MOBILE_REVEAL_MS
+     in src/components/LogoIntroAnimation.tsx. */
+  --animate-logo-reveal: logo-reveal 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes logo-reveal {
+    from {
+      opacity: 0;
+      transform: scale(0.86);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
 }
 
 /* Base styles */

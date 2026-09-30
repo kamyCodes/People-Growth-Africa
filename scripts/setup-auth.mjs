@@ -135,6 +135,96 @@ const STATEMENTS = [
     'auth_events created_at index',
     'CREATE INDEX IF NOT EXISTS auth_events_created_at_idx ON auth_events (created_at DESC)',
   ],
+
+  [
+    'newsletter_subscribers table',
+    `CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       email citext UNIQUE NOT NULL,
+       status text NOT NULL DEFAULT 'pending'
+         CHECK (status IN ('pending', 'confirmed', 'unsubscribed')),
+       confirm_token_hash text,
+       confirm_expires_at timestamptz,
+       confirmed_at timestamptz,
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`,
+  ],
+
+  [
+    'newsletter_subscribers confirm token index',
+    'CREATE INDEX IF NOT EXISTS newsletter_subscribers_confirm_token_idx ON newsletter_subscribers (confirm_token_hash)',
+  ],
+
+  // Leads have no unique constraint on purpose: the same person may register
+  // for two events, or ask for a consultation twice, and both are real leads.
+  [
+    'event_registrations table',
+    `CREATE TABLE IF NOT EXISTS event_registrations (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       event_slug text NOT NULL,
+       name text NOT NULL,
+       email citext NOT NULL,
+       phone text,
+       organisation text NOT NULL,
+       role text,
+       question text,
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`,
+  ],
+
+  [
+    'event_registrations event_slug index',
+    'CREATE INDEX IF NOT EXISTS event_registrations_event_slug_idx ON event_registrations (event_slug)',
+  ],
+
+  [
+    'consultation_bookings table',
+    `CREATE TABLE IF NOT EXISTS consultation_bookings (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       name text NOT NULL,
+       email citext NOT NULL,
+       phone text,
+       organisation text NOT NULL,
+       team_size text,
+       service text,
+       meeting_format text NOT NULL CHECK (meeting_format IN ('virtual', 'in-person')),
+       preferred_date date NOT NULL,
+       preferred_slot text NOT NULL,
+       notes text,
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`,
+  ],
+
+  [
+    'enquiries table',
+    `CREATE TABLE IF NOT EXISTS enquiries (
+       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+       name text NOT NULL,
+       email citext NOT NULL,
+       phone text,
+       subject text NOT NULL,
+       message text NOT NULL,
+       source text NOT NULL CHECK (source IN ('consultation-modal', 'consultation-page')),
+       created_at timestamptz NOT NULL DEFAULT now()
+     )`,
+  ],
+
+  // The team reads the newest leads first, so this is the index every list of
+  // them will use.
+  [
+    'event_registrations created_at index',
+    'CREATE INDEX IF NOT EXISTS event_registrations_created_at_idx ON event_registrations (created_at DESC)',
+  ],
+
+  [
+    'consultation_bookings created_at index',
+    'CREATE INDEX IF NOT EXISTS consultation_bookings_created_at_idx ON consultation_bookings (created_at DESC)',
+  ],
+
+  [
+    'enquiries created_at index',
+    'CREATE INDEX IF NOT EXISTS enquiries_created_at_idx ON enquiries (created_at DESC)',
+  ],
 ];
 
 const REQUIRED_TABLES = [
@@ -143,6 +233,10 @@ const REQUIRED_TABLES = [
   'employer_profiles',
   'auth_tokens',
   'auth_events',
+  'newsletter_subscribers',
+  'event_registrations',
+  'consultation_bookings',
+  'enquiries',
 ];
 
 async function migrate(sql) {
@@ -193,6 +287,123 @@ async function verify(sql) {
   const leftovers = await sql.query('SELECT count(*)::int AS count FROM employer_profiles');
   console.log(
     `  ok  self test passed (insert, duplicate email rejected, delete cascaded, ${leftovers[0].count} profile rows left)`,
+  );
+}
+
+/**
+ * Self test for the newsletter table, running the exact statements the app runs:
+ * the insert or refresh upsert (one row per address, letter case included) and
+ * the atomic confirm that cannot be replayed. Removes its own row.
+ */
+async function verifyNewsletter(sql) {
+  const email = 'newsletter-smoke-test@example.invalid';
+  await sql.query('DELETE FROM newsletter_subscribers WHERE email = $1', [email]);
+
+  const pending = await sql.query(
+    `INSERT INTO newsletter_subscribers (email, status, confirm_token_hash, confirm_expires_at)
+     VALUES ($1, 'pending', $2, now() + make_interval(secs => $3))
+     ON CONFLICT (email) DO UPDATE
+       SET status = 'pending',
+           confirm_token_hash = EXCLUDED.confirm_token_hash,
+           confirm_expires_at = EXCLUDED.confirm_expires_at
+       WHERE newsletter_subscribers.status <> 'confirmed'
+     RETURNING status`,
+    [email, 'not-a-real-hash', 172800],
+  );
+  if (pending.length !== 1 || pending[0].status !== 'pending') {
+    throw new Error('Self test: the newsletter upsert did not return a pending row.');
+  }
+
+  // A second signup, typed in capitals, must refresh the same row rather than
+  // create a second one.
+  const refreshed = await sql.query(
+    `INSERT INTO newsletter_subscribers (email, status, confirm_token_hash, confirm_expires_at)
+     VALUES ($1, 'pending', $2, now() + make_interval(secs => $3))
+     ON CONFLICT (email) DO UPDATE
+       SET status = 'pending',
+           confirm_token_hash = EXCLUDED.confirm_token_hash,
+           confirm_expires_at = EXCLUDED.confirm_expires_at
+       WHERE newsletter_subscribers.status <> 'confirmed'
+     RETURNING status`,
+    [email.toUpperCase(), 'second-hash', 172800],
+  );
+  const counted = await sql.query(
+    'SELECT count(*)::int AS count FROM newsletter_subscribers WHERE email = $1',
+    [email],
+  );
+  if (refreshed.length !== 1 || counted[0].count !== 1) {
+    throw new Error('Self test: the newsletter table holds duplicate rows for one address.');
+  }
+
+  const confirmStatement = `UPDATE newsletter_subscribers
+      SET status = 'confirmed',
+          confirmed_at = now(),
+          confirm_token_hash = NULL,
+          confirm_expires_at = NULL
+    WHERE confirm_token_hash = $1
+      AND status = 'pending'
+      AND confirm_expires_at > now()
+    RETURNING email`;
+  const confirmed = await sql.query(confirmStatement, ['second-hash']);
+  if (confirmed.length !== 1) throw new Error('Self test: confirming a newsletter row failed.');
+  const replayed = await sql.query(confirmStatement, ['second-hash']);
+  if (replayed.length !== 0) throw new Error('Self test: a used newsletter link could be replayed.');
+
+  await sql.query('DELETE FROM newsletter_subscribers WHERE email = $1', [email]);
+  console.log(
+    '  ok  newsletter self test passed (upsert, one row per address, atomic confirm, no replay)',
+  );
+}
+
+/**
+ * Self test for the lead tables, running the exact inserts the app runs plus
+ * the source check, then removing its own rows. A booking or an enquiry that
+ * cannot be written is the failure this exists to catch, because the form on
+ * the site would look like it worked either way.
+ */
+async function verifyLeads(sql) {
+  const email = 'lead-smoke-test@example.invalid';
+  try {
+    const registration = await sql.query(
+      `INSERT INTO event_registrations (event_slug, name, email, phone, organisation, role, question)
+       VALUES ($1, $2, $3, NULL, $4, NULL, NULL)
+       RETURNING id`,
+      ['smoke-test-event', 'Smoke Test', email, 'Smoke Test Ltd'],
+    );
+    const booking = await sql.query(
+      `INSERT INTO consultation_bookings
+         (name, email, phone, organisation, team_size, service, meeting_format, preferred_date, preferred_slot, notes)
+       VALUES ($1, $2, $3, $4, NULL, NULL, $5, $6, $7, NULL)
+       RETURNING id`,
+      ['Smoke Test', email, '+234 800 000 0000', 'Smoke Test Ltd', 'virtual', '2026-01-05', '10:00 AM'],
+    );
+    const enquiry = await sql.query(
+      `INSERT INTO enquiries (name, email, phone, subject, message, source)
+       VALUES ($1, $2, NULL, $3, $4, $5)
+       RETURNING id`,
+      ['Smoke Test', email, 'Smoke test', 'Smoke test message', 'consultation-page'],
+    );
+    if (registration.length !== 1 || booking.length !== 1 || enquiry.length !== 1) {
+      throw new Error('Self test: a lead row could not be written.');
+    }
+
+    const badSourceRejected = await sql
+      .query(
+        `INSERT INTO enquiries (name, email, subject, message, source)
+         VALUES ($1, $2, $3, $4, 'somewhere-else')`,
+        ['Smoke Test', email, 'Smoke test', 'Smoke test message'],
+      )
+      .then(() => false)
+      .catch((error) => error.code === '23514');
+    if (!badSourceRejected) throw new Error('Self test: the enquiry source check is missing.');
+  } finally {
+    await sql.query('DELETE FROM event_registrations WHERE email = $1', [email]);
+    await sql.query('DELETE FROM consultation_bookings WHERE email = $1', [email]);
+    await sql.query('DELETE FROM enquiries WHERE email = $1', [email]);
+  }
+
+  console.log(
+    '  ok  lead self test passed (event registration, booking and enquiry stored, unknown source rejected)',
   );
 }
 
@@ -297,6 +508,8 @@ await migrate(sql);
 
 console.log('Checking the result...');
 await verify(sql);
+await verifyNewsletter(sql);
+await verifyLeads(sql);
 
 console.log('Checking JWT_SECRET...');
 if (process.env.JWT_SECRET && process.env.JWT_SECRET.length >= 32) {

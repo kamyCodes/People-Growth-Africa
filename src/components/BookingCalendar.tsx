@@ -1,5 +1,12 @@
 import { useState, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Select from './Select';
+import {
+  leadFailureMessage,
+  localIsoDate,
+  submitConsultationBooking,
+  submitWrittenEnquiry,
+} from '../lib/leadClient';
 
 // Availability rules
 // Mon-Fri: 8:00 AM - 6:00 PM WAT
@@ -33,14 +40,22 @@ const SATURDAY_SLOTS: TimeSlot[] = [
 ];
 
 const serviceOptions = [
-  'HR Strategic Advisory & Retainership',
-  'Nigerian Labour Law & Regulatory Compliance',
-  'Organisational Architecture & Grading',
-  'Performance Management & OKRs',
-  'Agribusiness Workforce Systems',
-  'Talent Acquisition & Executive Search',
-  'Leadership & Culture Development',
-  'General Consultation & Inquiry',
+  'HR Advisory & Consulting',
+  'Learning & Development',
+  'Organisational Design',
+  'Culture Development',
+  'Performance Management',
+  'HR Audits & Compliance',
+  'Agribusiness Workforce Development',
+  'Career Development Programmes',
+  'Recruitment & Talent Management',
+  'HR Retainerships',
+  'People Strategy for SMEs',
+  'Workforce Formalisation',
+  'Nigerian Labour Law Compliance',
+  'Team Effectiveness',
+  'Leadership Development',
+  'General Consultation & Enquiry',
 ];
 
 const teamSizeOptions = [
@@ -81,6 +96,7 @@ export default function BookingCalendar() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBooked, setIsBooked] = useState(false);
   const [isMessageSent, setIsMessageSent] = useState(false);
+  const [error, setError] = useState('');
 
   // Form Fields
   const [formData, setFormData] = useState<BookingFormData>({
@@ -89,7 +105,7 @@ export default function BookingCalendar() {
     phone: '',
     companyName: '',
     teamSize: '11 – 50 Employees',
-    service: 'HR Strategic Advisory & Retainership',
+    service: 'HR Advisory & Consulting',
     meetingFormat: 'virtual',
     notes: '',
   });
@@ -136,26 +152,58 @@ export default function BookingCalendar() {
     });
   };
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setError('');
+
+    const result = await submitConsultationBooking({
+      name: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      organisation: formData.companyName,
+      teamSize: formData.teamSize,
+      service: formData.service,
+      meetingFormat: formData.meetingFormat,
+      preferredDate: localIsoDate(selectedDate),
+      preferredSlot: selectedTimeSlot,
+      notes: formData.notes,
+    });
+
+    setIsSubmitting(false);
+    if (result.ok) {
       setIsBooked(true);
-    }, 900);
+      return;
+    }
+    setError(leadFailureMessage(result.failure, 'preferredDate'));
   };
 
-  const handleDirectSubmit = (e: React.FormEvent) => {
+  const handleDirectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setError('');
+
+    const result = await submitWrittenEnquiry({
+      name: directMessage.name,
+      email: directMessage.email,
+      phone: directMessage.phone,
+      subject: directMessage.subject,
+      message: directMessage.message,
+      source: 'consultation-page',
+    });
+
+    setIsSubmitting(false);
+    if (result.ok) {
       setIsMessageSent(true);
-    }, 900);
+      return;
+    }
+    setError(leadFailureMessage(result.failure, 'email'));
   };
 
   const downloadICS = () => {
-    const dateStr = selectedDate.toISOString().split('T')[0].replace(/-/g, '');
+    const dateStr = localIsoDate(selectedDate).replace(/-/g, '');
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -184,7 +232,7 @@ export default function BookingCalendar() {
   };
 
   const getGoogleCalendarUrl = () => {
-    const dateStr = selectedDate.toISOString().split('T')[0].replace(/-/g, '');
+    const dateStr = localIsoDate(selectedDate).replace(/-/g, '');
     const startTime = `${dateStr}T100000Z`;
     const endTime = `${dateStr}T104500Z`;
     const title = encodeURIComponent(`People Growth Africa Consultation - ${formData.fullName || 'Client'}`);
@@ -208,13 +256,13 @@ export default function BookingCalendar() {
         <div className="absolute top-[-40px] right-[-40px] w-48 h-48 rounded-full bg-brand-green/20 blur-2xl" />
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 text-mint text-xs font-semibold uppercase tracking-wider mb-3">
-            Schedule Consultation &bull; Free 30-Minute Diagnostic
+            Book a consultation &bull; free 30-minute diagnostic
           </div>
           <h3 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-semibold leading-tight mb-2">
-            Let&apos;s Discuss Your People Architecture
+            Let&apos;s talk about your people setup
           </h3>
           <p className="font-[family-name:var(--font-body)] text-white/80 text-sm md:text-base max-w-[700px] leading-relaxed">
-            Select a preferred consultation slot or send us a direct message. Our advisory partners will review your requirements and provide immediate strategic clarity.
+            Pick a time that suits you, or send us a written enquiry. An advisor will review it and come back with clear next steps.
           </p>
 
           {/* Operating Hours Summary */}
@@ -239,25 +287,31 @@ export default function BookingCalendar() {
       <div className="flex border-b border-charcoal/10 bg-cream/30 px-6 pt-3 gap-3">
         <button
           type="button"
-          onClick={() => setActiveTab('calendar')}
+          onClick={() => {
+            setActiveTab('calendar');
+            setError('');
+          }}
           className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'calendar'
               ? 'border-deep-green text-deep-green'
               : 'border-transparent text-charcoal/60 hover:text-charcoal'
           }`}
         >
-          Book via Calendar
+          Book a time
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab('direct')}
+          onClick={() => {
+            setActiveTab('direct');
+            setError('');
+          }}
           className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'direct'
               ? 'border-deep-green text-deep-green'
               : 'border-transparent text-charcoal/60 hover:text-charcoal'
           }`}
         >
-          Send Written Inquiry
+          Send a written enquiry
         </button>
       </div>
 
@@ -278,10 +332,10 @@ export default function BookingCalendar() {
                   </svg>
                 </div>
                 <h4 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-charcoal mb-2">
-                  Consultation Confirmed
+                  Consultation requested
                 </h4>
                 <p className="font-[family-name:var(--font-body)] text-charcoal/70 text-sm md:text-base leading-relaxed mb-6">
-                  Thank you, <strong>{formData.fullName}</strong>. Your consultation has been scheduled with the People Growth Africa advisory team.
+                  Thank you, <strong>{formData.fullName}</strong>. Your request is with the People Growth Africa advisory team, who will confirm the time by email within one working day.
                 </p>
 
                 {/* Booking Receipt Card */}
@@ -297,7 +351,7 @@ export default function BookingCalendar() {
                       <strong className="text-charcoal block">{formData.service}</strong>
                     </div>
                     <div>
-                      <span className="text-xs uppercase font-semibold text-charcoal/50 block mb-0.5">Company / Organization</span>
+                      <span className="text-xs uppercase font-semibold text-charcoal/50 block mb-0.5">Organisation</span>
                       <strong className="text-charcoal block">{formData.companyName || 'Not specified'} ({formData.teamSize})</strong>
                     </div>
                     <div>
@@ -326,26 +380,27 @@ export default function BookingCalendar() {
                     onClick={downloadICS}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-deep-green text-white text-sm font-semibold rounded-full hover:bg-brand-green transition-all"
                   >
-                    Download Calendar Invite (.ics)
+                    Download calendar invite (.ics)
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       setIsBooked(false);
+                      setError('');
                       setFormData({
                         fullName: '',
                         email: '',
                         phone: '',
                         companyName: '',
                         teamSize: '11 – 50 Employees',
-                        service: 'HR Strategic Advisory & Retainership',
+                        service: 'HR Advisory & Consulting',
                         meetingFormat: 'virtual',
                         notes: '',
                       });
                     }}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-cream text-charcoal text-sm font-semibold rounded-full hover:bg-charcoal/10 transition-all border border-charcoal/15"
                   >
-                    Schedule Another Session
+                    Book another session
                   </button>
                 </div>
               </motion.div>
@@ -449,14 +504,13 @@ export default function BookingCalendar() {
 
                 {/* Step 3: Information & Requirements Form */}
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-deep-green block mb-4">
-                    3. Enterprise &amp; Contact Details
+                  <label className="text-xs font-semibold uppercase tracking-wider text-deep-green block mb-4">                      3. Your details
                   </label>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor={`${formId}-fullName`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                        Full Name *
+                        Full name *
                       </label>
                       <input
                         id={`${formId}-fullName`}
@@ -473,7 +527,7 @@ export default function BookingCalendar() {
 
                     <div>
                       <label htmlFor={`${formId}-email`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                        Work Email Address *
+                        Work email *
                       </label>
                       <input
                         id={`${formId}-email`}
@@ -490,7 +544,7 @@ export default function BookingCalendar() {
 
                     <div>
                       <label htmlFor={`${formId}-phone`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                        Phone / WhatsApp Number *
+                        Phone or WhatsApp *
                       </label>
                       <input
                         id={`${formId}-phone`}
@@ -507,7 +561,7 @@ export default function BookingCalendar() {
 
                     <div>
                       <label htmlFor={`${formId}-companyName`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                        Company / Organization Name *
+                        Organisation or company name *
                       </label>
                       <input
                         id={`${formId}-companyName`}
@@ -523,50 +577,34 @@ export default function BookingCalendar() {
                     </div>
 
                     <div>
-                      <label htmlFor={`${formId}-teamSize`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                        Current Team Size
-                      </label>
-                      <select
+                      <Select
                         id={`${formId}-teamSize`}
+                        name="teamSize"
+                        label="Team size"
+                        options={teamSizeOptions}
                         value={formData.teamSize}
-                        onChange={(e) =>
-                          setFormData({ ...formData, teamSize: e.target.value })
-                        }
-                        className="w-full px-4 py-3 rounded-[12px] border border-charcoal/20 bg-cream/20 text-charcoal text-sm focus:outline-none focus:border-brand-green focus:bg-white transition-all"
-                      >
-                        {teamSizeOptions.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => setFormData({ ...formData, teamSize: value })}
+                        size="md"
+                      />
                     </div>
 
                     <div>
-                      <label htmlFor={`${formId}-service`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                        Primary Advisory Area
-                      </label>
-                      <select
+                      <Select
                         id={`${formId}-service`}
+                        name="service"
+                        label="What you need help with"
+                        options={serviceOptions}
                         value={formData.service}
-                        onChange={(e) =>
-                          setFormData({ ...formData, service: e.target.value })
-                        }
-                        className="w-full px-4 py-3 rounded-[12px] border border-charcoal/20 bg-cream/20 text-charcoal text-sm focus:outline-none focus:border-brand-green focus:bg-white transition-all"
-                      >
-                        {serviceOptions.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {opt}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => setFormData({ ...formData, service: value })}
+                        size="md"
+                      />
                     </div>
                   </div>
 
                   {/* Meeting Format */}
                   <div className="mt-4">
                     <label className="block text-xs font-semibold text-charcoal/70 mb-2">
-                      Meeting Format
+                      How we meet
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <label
@@ -611,12 +649,12 @@ export default function BookingCalendar() {
                   {/* Notes */}
                   <div className="mt-4">
                     <label htmlFor={`${formId}-notes`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                      Specific People Challenges or Context (Optional)
+                      Anything we should know? (optional)
                     </label>
                     <textarea
                       id={`${formId}-notes`}
                       rows={3}
-                      placeholder="Briefly describe what you would like to resolve or achieve..."
+                      placeholder="Briefly describe what you would like to resolve or achieve…"
                       value={formData.notes}
                       onChange={(e) =>
                         setFormData({ ...formData, notes: e.target.value })
@@ -626,6 +664,15 @@ export default function BookingCalendar() {
                   </div>
                 </div>
 
+                {error && (
+                  <p
+                    role="alert"
+                    className="rounded-[12px] border border-terracotta/30 bg-terracotta/10 px-4 py-3 text-sm text-terracotta"
+                  >
+                    {error}
+                  </p>
+                )}
+
                 {/* Submit Button */}
                 <div className="pt-2">
                   <button
@@ -634,11 +681,11 @@ export default function BookingCalendar() {
                     className="w-full py-4 px-8 bg-brand-green text-white font-semibold rounded-full hover:bg-terracotta transition-all duration-300 shadow-md text-sm md:text-base cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting
-                      ? 'Confirming Consultation Slot...'
-                      : `Confirm Consultation for ${formatDateLabel(selectedDate)} at ${selectedTimeSlot}`}
+                      ? 'Sending your request…'
+                      : `Request ${formatDateLabel(selectedDate)} at ${selectedTimeSlot}`}
                   </button>
                   <p className="text-center text-xs text-charcoal/50 mt-3">
-                    Consultations are complimentary for African business founders and leadership teams. No credit card required.
+                    Consultations are free for African business founders and leadership teams. No card needed.
                   </p>
                 </div>
               </motion.form>
@@ -657,20 +704,21 @@ export default function BookingCalendar() {
                 </svg>
               </div>
               <h4 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-charcoal mb-2">
-                Inquiry Received
+                Enquiry received
               </h4>
               <p className="font-[family-name:var(--font-body)] text-charcoal/70 text-sm md:text-base leading-relaxed mb-6">
-                Thank you, <strong>{directMessage.name}</strong>. Our team has received your message and will respond within 1 business day.
+                Thank you, <strong>{directMessage.name}</strong>. We have your message and will reply within one working day.
               </p>
               <button
                 type="button"
                 onClick={() => {
                   setIsMessageSent(false);
+                  setError('');
                   setDirectMessage({ name: '', email: '', phone: '', subject: '', message: '' });
                 }}
                 className="px-6 py-3 bg-deep-green text-white text-sm font-semibold rounded-full hover:bg-brand-green transition-all"
               >
-                Send Another Message
+                Send another message
               </button>
             </motion.div>
           ) : (
@@ -685,7 +733,7 @@ export default function BookingCalendar() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor={`${formId}-direct-name`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                    Your Name *
+                    Your name *
                   </label>
                   <input
                     id={`${formId}-direct-name`}
@@ -701,7 +749,7 @@ export default function BookingCalendar() {
                 </div>
                 <div>
                   <label htmlFor={`${formId}-direct-email`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                    Email Address *
+                    Email address *
                   </label>
                   <input
                     id={`${formId}-direct-email`}
@@ -720,7 +768,7 @@ export default function BookingCalendar() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor={`${formId}-direct-phone`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                    Phone / WhatsApp Number
+                    Phone or WhatsApp
                   </label>
                   <input
                     id={`${formId}-direct-phone`}
@@ -735,7 +783,7 @@ export default function BookingCalendar() {
                 </div>
                 <div>
                   <label htmlFor={`${formId}-direct-subject`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                    Subject / Topic *
+                    Subject *
                   </label>
                   <input
                     id={`${formId}-direct-subject`}
@@ -759,7 +807,7 @@ export default function BookingCalendar() {
                   id={`${formId}-direct-message`}
                   rows={4}
                   required
-                  placeholder="How can People Growth Africa assist your team?"
+                  placeholder="How can we help your team?"
                   value={directMessage.message}
                   onChange={(e) =>
                     setDirectMessage({ ...directMessage, message: e.target.value })
@@ -768,12 +816,21 @@ export default function BookingCalendar() {
                 />
               </div>
 
+              {error && (
+                <p
+                  role="alert"
+                  className="rounded-[12px] border border-terracotta/30 bg-terracotta/10 px-4 py-3 text-sm text-terracotta"
+                >
+                  {error}
+                </p>
+              )}
+
               <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full py-4 px-8 bg-deep-green text-white font-semibold rounded-full hover:bg-brand-green transition-all duration-300 shadow-md text-sm md:text-base cursor-pointer disabled:opacity-50"
               >
-                {isSubmitting ? 'Sending Message...' : 'Send Inquiry to People Growth Africa'}
+                {isSubmitting ? 'Sending…' : 'Send enquiry'}
               </button>
             </motion.form>
           )}

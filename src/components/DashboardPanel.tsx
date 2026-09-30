@@ -250,6 +250,7 @@ export default function DashboardPanel({
                 name="password"
                 type="password"
                 autoComplete="current-password"
+                placeholder="Your password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className={inputClass}

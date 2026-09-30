@@ -55,27 +55,36 @@ export default function ServiceDetailModal({
         transition={{ duration: 0.25 }}
         className="relative z-10 bg-white rounded-[24px] max-w-[760px] w-full max-h-[90vh] overflow-y-auto shadow-elevated border border-charcoal/10 my-auto text-left"
       >
-        {/* Header */}
-        <div className="bg-deep-green p-6 md:p-8 text-white relative">
+        {/* Close Button: sticky so it stays reachable while the modal scrolls.
+            The wrapper has no height, so the button floats over the header
+            instead of pushing it down. */}
+        <div className="pointer-events-none sticky top-0 z-30 flex h-0 justify-end">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close modal"
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer transition-all"
+            className="pointer-events-auto mt-4 mr-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-deep-green shadow-md ring-1 ring-charcoal/10 transition-colors motion-reduce:transition-none hover:bg-mint focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green cursor-pointer"
           >
-            <svg className="w-4 h-4 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round" viewBox="0 0 24 24">
+            <svg
+              className="h-4 w-4 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
+        </div>
 
+        {/* Header */}
+        <div className="bg-deep-green p-6 md:p-8 text-white relative">
           <div className="pr-8">
             <span
               className={`inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-2.5 ${getCategoryBadge(
                 service.category,
               )}`}
             >
-              Specialised HR Practice &bull; {service.category.toUpperCase()}
+              Specialised HR practice &bull; {service.category.toUpperCase()}
             </span>
             <h3 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-semibold leading-tight mb-2">
               {service.name}
@@ -91,7 +100,7 @@ export default function ServiceDetailModal({
           {/* Detailed Overview */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-deep-green mb-2">
-              Strategic Practice Overview
+              What this service covers
             </h4>
             <p className="font-[family-name:var(--font-body)] text-charcoal/80 text-sm md:text-base leading-relaxed">
               {service.description}
@@ -119,7 +128,7 @@ export default function ServiceDetailModal({
                   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
                 </svg>
-                Target Organization Profile
+                Who it suits
               </div>
               <p className="font-[family-name:var(--font-heading)] font-semibold text-charcoal text-sm">
                 {service.targetAudience}
@@ -130,7 +139,7 @@ export default function ServiceDetailModal({
           {/* Key Deliverables */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-deep-green mb-3">
-              Institutional Deliverables
+              What you get
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {service.deliverables.map((del, i) => (
@@ -154,7 +163,7 @@ export default function ServiceDetailModal({
           {/* Business Outcomes */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-deep-green mb-2.5">
-              Measurable Commercial Impact
+              What it changes for you
             </h4>
             <ul className="space-y-2">
               {service.businessOutcomes.map((out, i) => (
@@ -173,7 +182,7 @@ export default function ServiceDetailModal({
               onClick={onClose}
               className="w-full sm:w-auto px-6 py-2.5 bg-cream text-charcoal text-xs font-semibold rounded-full hover:bg-charcoal/10 transition-all border border-charcoal/15 cursor-pointer text-center"
             >
-              Back to All Services
+              Back to all services
             </button>
             <button
               type="button"
@@ -183,7 +192,7 @@ export default function ServiceDetailModal({
               }}
               className="w-full sm:w-auto px-7 py-3 bg-brand-green text-white text-xs md:text-sm font-semibold rounded-full hover:bg-terracotta transition-all shadow-sm cursor-pointer text-center"
             >
-              Book Consultation for {service.name} →
+              Book a consultation about {service.name} →
             </button>
           </div>
         </div>

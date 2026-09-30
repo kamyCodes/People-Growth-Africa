@@ -1,11 +1,11 @@
-import { ApiError, clientIp, endpoint, parseJsonBody, safeRedirect, sendJson } from '../_lib/http.js';
-import { deleteAccountSchema, parseInput } from '../_lib/validation.js';
-import { deleteUser, findUserByEmail } from '../_lib/db.js';
-import { verifyPassword } from '../_lib/security.js';
-import { clearSessionCookie } from '../_lib/session.js';
-import { requireSession } from '../_lib/current-user.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { ApiError, clientIp, endpoint, parseJsonBody, safeRedirect, sendJson } from '../../http.js';
+import { deleteAccountSchema, parseInput } from '../../validation.js';
+import { deleteUser, findUserByEmail } from '../../db.js';
+import { verifyPassword } from '../../security.js';
+import { clearSessionCookie } from '../../session.js';
+import { requireSession } from '../../current-user.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 export default endpoint({ methods: ['DELETE'], csrf: true }, async (req, res) => {
   const ip = clientIp(req);

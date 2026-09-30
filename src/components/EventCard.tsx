@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { EventItem } from '../data/events';
 
 interface EventCardProps {
@@ -6,7 +7,9 @@ interface EventCardProps {
   featured?: boolean;
 }
 
-export default function EventCard({ event, onRegister, featured = false }: EventCardProps) {
+/** Memoised because the carousel re-renders on every auto-advance: the cards
+ *  themselves never change, so only the track's transform should cost work. */
+function EventCard({ event, onRegister, featured = false }: EventCardProps) {
   const getTypeBadgeStyle = (type: EventItem['type']) => {
     switch (type) {
       case 'webinar':
@@ -39,7 +42,7 @@ export default function EventCard({ event, onRegister, featured = false }: Event
             {event.typeLabel}
           </span>
           <span className="text-xs font-medium text-charcoal/50">
-            {event.seatsRemaining} seats remaining
+            {event.seatsRemaining} places left
           </span>
         </div>
 
@@ -102,9 +105,11 @@ export default function EventCard({ event, onRegister, featured = false }: Event
           onClick={() => onRegister(event)}
           className="inline-flex items-center justify-center px-6 py-2.5 bg-deep-green text-white font-[family-name:var(--font-body)] text-xs font-semibold rounded-full hover:bg-brand-green transition-all duration-300 cursor-pointer shadow-sm"
         >
-          {event.type === 'mentorship' ? 'Apply for Cohort →' : 'Register Free →'}
+          {event.type === 'mentorship' ? 'Apply for a place →' : 'Register free →'}
         </button>
       </div>
     </div>
   );
 }
+
+export default memo(EventCard);
