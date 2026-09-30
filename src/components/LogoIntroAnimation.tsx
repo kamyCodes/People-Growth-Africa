@@ -27,6 +27,23 @@ export interface LogoIntroAnimationProps {
   forceRun?: boolean;
 }
 
+/** Phones get a plain fade and scale instead of the dot scatter. The dots are
+ *  SVG children animated from JavaScript, every one of them inside a scaled,
+ *  promoted layer, so the frame cost rises with the node count: a phone pays
+ *  for every frame it paints. The reveal below is a single <img> with a CSS
+ *  transform/opacity animation, which the compositor runs on its own, so the
+ *  main thread has nothing left to do after the first frame. */
+const MOBILE_MAX_WIDTH = 640;
+/** Matches --animate-logo-reveal in src/index.css. */
+const MOBILE_REVEAL_MS = 620;
+/** Grace on top of the reveal before it is recorded as finished. */
+const MOBILE_SETTLE_GRACE_MS = 200;
+const FULL_START_SCALE = 3.2;
+
+/** Grace period after the intro should have finished before it is assumed
+ *  stalled and landed on its final frame. */
+const STALL_GRACE_MS = 900;
+
 function sampleLogoImage(
   logoUrl: string,
   density: number = 32,
@@ -160,6 +177,10 @@ export function LogoIntroAnimation({
   const realLogoRef = useRef<HTMLImageElement>(null);
   const wordmarkRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  // Only the mark scales during the intro. Scaling the wrapper used to drag the
+  // wordmark along with it, which forced the browser to rasterise twelve text
+  // nodes at 3.2x on every frame and was the main source of the jank here.
+  const markRef = useRef<HTMLDivElement>(null);
 
   const [shouldAnimate] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -167,6 +188,13 @@ export function LogoIntroAnimation({
     const hasSeen = sessionStorage.getItem('pga_logo_animated') === 'true';
     return !prefersReducedMotion && (!hasSeen || forceRun);
   });
+
+  // Read once: the intro is a one-shot on mount, so a later rotation should not
+  // swap the shape of an animation that has already played.
+  const [isNarrow] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < MOBILE_MAX_WIDTH,
+  );
+  const mobileReveal = shouldAnimate && isNarrow;
 
   const [parts, setParts] = useState<LogoPart[]>(() => {
     if (precomputedParts && precomputedParts.length > 0) return precomputedParts;
@@ -176,9 +204,10 @@ export function LogoIntroAnimation({
     return [];
   });
 
+  // The reveal needs no parts at all, so a phone never samples the logo image.
   useEffect(() => {
-    if (!shouldAnimate) {
-      if (onComplete) onComplete();
+    if (!shouldAnimate || mobileReveal) {
+      if (!shouldAnimate && onComplete) onComplete();
       return;
     }
 
@@ -187,42 +216,65 @@ export function LogoIntroAnimation({
         setParts(res.parts);
       });
     }
-  }, [shouldAnimate, logoSrc, density, maxPartsCap, onComplete, parts.length]);
+  }, [shouldAnimate, mobileReveal, logoSrc, density, maxPartsCap, onComplete, parts.length]);
+
+  // Nothing watches the reveal frame by frame: this timer only records that the
+  // intro has played, so it does not run again this session, and tells a caller
+  // when the lockup has settled.
+  const mobileSettledRef = useRef(false);
+  useEffect(() => {
+    if (!mobileReveal) return;
+    const id = window.setTimeout(() => {
+      if (mobileSettledRef.current) return;
+      mobileSettledRef.current = true;
+      sessionStorage.setItem('pga_logo_animated', 'true');
+      if (onComplete) onComplete();
+    }, MOBILE_REVEAL_MS + MOBILE_SETTLE_GRACE_MS);
+    return () => clearTimeout(id);
+  }, [mobileReveal, onComplete]);
 
   useEffect(() => {
-    if (!shouldAnimate || parts.length === 0) return;
+    if (!shouldAnimate || mobileReveal || parts.length === 0) return;
 
     const totalDuration = 2.6;
     let cancelled = false;
     let started = false;
+    let settled = false;
     let rafId: number | null = null;
     let rafId2: number | null = null;
     let startTimerId: number | null = null;
+    let watchdogId: number | null = null;
+
+    /** Land the lockup on its final state exactly once, whether the timeline
+     *  reached the end on its own or had to be rescued. */
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      // Release the promoted layer and every inline animation style so the
+      // settled lockup renders exactly like the static fallback.
+      gsap.set([markRef.current, wrapperRef.current], { clearProps: 'transform,willChange' });
+      if (wordmarkRef.current) {
+        gsap.set(wordmarkRef.current, { clearProps: 'clipPath' });
+        gsap.set(wordmarkRef.current.children, { clearProps: 'transform,opacity' });
+      }
+      sessionStorage.setItem('pga_logo_animated', 'true');
+      if (onComplete) onComplete();
+    };
+
     const timeline = gsap.timeline({
       // Built (and pre-positioned) now, played once fonts + first paint settle.
       paused: true,
-      onComplete: () => {
-        // Release the promoted layer and every inline animation style so the
-        // settled lockup renders exactly like the static fallback.
-        gsap.set(wrapperRef.current, { clearProps: 'transform,willChange' });
-        if (wordmarkRef.current) {
-          gsap.set(wordmarkRef.current, { clearProps: 'clipPath' });
-          gsap.set(wordmarkRef.current.children, { clearProps: 'transform,opacity' });
-        }
-        sessionStorage.setItem('pga_logo_animated', 'true');
-        if (onComplete) onComplete();
-      },
+      onComplete: settle,
     });
 
     const stippleNodes = stippleGroupRef.current?.querySelectorAll('circle') || [];
     const circles = Array.from(stippleNodes) as SVGCircleElement[];
 
-    // Hardware acceleration setup (translate3d only helps the HTML wrapper).
-    gsap.set(wrapperRef.current, {
-      scale: 3.2,
-      xPercent: 0,
-      yPercent: 0,
-      opacity: 1,
+    // Hardware acceleration setup. Only the mark is promoted and scaled: it is
+    // a single small element, so the compositor can scale one layer instead of
+    // re-rasterising the whole lockup (mark plus wordmark) every frame.
+    gsap.set(markRef.current, {
+      scale: FULL_START_SCALE,
       force3D: true,
       willChange: 'transform',
     });
@@ -276,7 +328,8 @@ export function LogoIntroAnimation({
       0
     );
 
-    // Phase B: Gentle Group Breathe (24% to 46%)
+    // Phase B: Gentle Group Breathe (24% to 46%). Phones never reach this
+    // timeline: scaling the whole dot group re-rasterises every one of them.
     const phaseBTime = totalDuration * 0.24;
     if (stippleGroupRef.current) {
       timeline.to(
@@ -299,7 +352,7 @@ export function LogoIntroAnimation({
     const phaseCDuration = totalDuration * 0.12;
 
     timeline.to(
-      wrapperRef.current,
+      markRef.current,
       {
         scale: 1,
         duration: phaseCDuration,
@@ -360,18 +413,6 @@ export function LogoIntroAnimation({
       );
     }
 
-    // Phase E: Settle (92% to 100%)
-    const phaseETime = totalDuration * 0.92;
-    timeline.to(
-      containerRef.current,
-      {
-        scale: 1,
-        duration: 0.15,
-        ease: 'power2.out',
-      },
-      phaseETime
-    );
-
     // Hold the intro until the web fonts have settled and the load frame has
     // painted, so it never fights the rest of the page for the main thread.
     // If the fonts are already in, this resolves without adding a delay.
@@ -388,7 +429,29 @@ export function LogoIntroAnimation({
       if (cancelled || started) return;
       started = true;
       timeline.play(0);
+      // GSAP renders on requestAnimationFrame. A window that is occluded,
+      // backgrounded or embedded can starve that callback indefinitely, which
+      // used to leave the mark stranded at its opening scale with the dots
+      // scattered and the wordmark clipped away: the logo read as broken rather
+      // than merely unanimated. If the playhead has not reached the end by the
+      // time it should have, jump straight to the finished lockup.
+      watchdogId = window.setTimeout(() => {
+        if (cancelled || timeline.progress() >= 1) return;
+        timeline.pause();
+        timeline.progress(1);
+        settle();
+      }, totalDuration * 1000 + STALL_GRACE_MS);
     };
+
+    // A tab hidden mid-intro is the same failure by another route, so finish it
+    // while nobody is looking instead of returning to a half-drawn logo.
+    const onVisibilityChange = () => {
+      if (!document.hidden || !started || settled) return;
+      timeline.pause();
+      timeline.progress(1);
+      settle();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     fontsReady.then(() => {
       if (cancelled) return;
@@ -405,12 +468,14 @@ export function LogoIntroAnimation({
 
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       if (rafId !== null) cancelAnimationFrame(rafId);
       if (rafId2 !== null) cancelAnimationFrame(rafId2);
       if (startTimerId !== null) clearTimeout(startTimerId);
+      if (watchdogId !== null) clearTimeout(watchdogId);
       timeline.kill();
     };
-  }, [shouldAnimate, parts, onComplete]);
+  }, [shouldAnimate, mobileReveal, parts, onComplete]);
 
   // Static lockup: used when the visitor has already seen the intro, prefers
   // reduced motion, or the logo parts could not be sampled. Without the last
@@ -418,12 +483,35 @@ export function LogoIntroAnimation({
   if (!shouldAnimate || parts.length === 0) {
     return (
       <div className={`inline-flex items-center gap-1.5 md:gap-2 ${className}`}>
-        <img src={logoSrc} alt="People Growth Africa" className="h-8 md:h-10 w-auto object-contain" />
+        <img
+          src={logoSrc}
+          alt="People Growth Africa"
+          className="h-8 md:h-10 w-auto object-contain shrink-0"
+        />
         {wordmarkText && (
-          <span className="font-[family-name:var(--font-heading)] font-bold text-base md:text-lg tracking-tight text-white">
+          // Hidden below lg: on mid-size screens the wordmark and the nav links
+          // cannot both fit, and it used to wrap onto three lines and sit on top
+          // of them. The mark alone carries the brand there.
+          <span className="hidden lg:inline whitespace-nowrap font-[family-name:var(--font-heading)] font-bold text-base md:text-lg tracking-tight text-white">
             {wordmarkText}
           </span>
         )}
+      </div>
+    );
+  }
+
+  // Phones: one element, one CSS animation, no dot layer underneath to paint.
+  // The reveal stops exactly where the static lockup above sits, so the next
+  // render cannot jump, and the wordmark is left out for the same reason that
+  // lockup hides it below lg: it would not fit next to the nav anyway.
+  if (mobileReveal) {
+    return (
+      <div className={`inline-flex items-center ${className}`}>
+        <img
+          src={logoSrc}
+          alt="People Growth Africa"
+          className="h-8 md:h-10 w-auto object-contain shrink-0 animate-logo-reveal motion-reduce:animate-none"
+        />
       </div>
     );
   }
@@ -434,17 +522,18 @@ export function LogoIntroAnimation({
       className={`relative inline-flex items-center justify-center p-1 ${className}`}
       style={{ overflow: 'visible' }}
     >
-      {/* The timeline's opening frame is expressed in CSS here as well. These
-          values used to be applied inside the effect below, which runs after
-          the first paint, so the finished lockup flashed for a frame before
-          snapping back to the start. Baking them into the markup means the
-          first frame painted already is the first frame of the animation. */}
-      <div
-        ref={wrapperRef}
-        className="relative flex items-center gap-1.5 md:gap-2"
-        style={{ transform: 'scale(3.2)', willChange: 'transform' }}
-      >
-        <div className="relative w-9 h-9 md:w-11 md:h-11 flex items-center justify-center">
+      {/* The timeline's opening frame is expressed in CSS here as well (the
+          start scale, and the inline opacity on every dot). These values used
+          to be applied inside the effect below, which runs after the first
+          paint, so the finished lockup flashed for a frame before snapping
+          back to the start. Baking them into the markup means the first frame
+          painted already is the first frame of the animation. */}
+      <div ref={wrapperRef} className="relative flex items-center gap-1.5 md:gap-2">
+        <div
+          ref={markRef}
+          className="relative w-9 h-9 md:w-11 md:h-11 flex items-center justify-center"
+          style={{ transform: `scale(${FULL_START_SCALE})`, willChange: 'transform' }}
+        >
           <svg
             className="w-full h-full overflow-visible"
             viewBox="-110 -110 220 220"
@@ -472,15 +561,17 @@ export function LogoIntroAnimation({
         </div>
 
         {wordmarkText && (
+          // `inline-flex` (not flex items inside a wrapping line) keeps every
+          // letter on one line, so the wordmark can never break into a stack.
           <div
             ref={wordmarkRef}
-            className="flex items-center font-[family-name:var(--font-heading)] font-bold text-base md:text-lg tracking-tight text-white"
+            className="hidden lg:inline-flex items-center whitespace-nowrap font-[family-name:var(--font-heading)] font-bold text-base md:text-lg tracking-tight text-white"
             style={{ clipPath: 'inset(0% 100% 0% 0%)' }}
           >
             {wordmarkText.split('').map((char, index) => (
               <span
                 key={index}
-                className="inline-block"
+                className="inline-block shrink-0"
                 style={{
                   whiteSpace: char === ' ' ? 'pre' : 'normal',
                   opacity: 0,

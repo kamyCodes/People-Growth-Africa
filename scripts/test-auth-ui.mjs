@@ -1,8 +1,10 @@
 /**
- * Browser end to end test for the auth forms. Drives the real signup and login
- * forms in headless Chrome or Edge, over the same local server test:auth uses,
- * so a client side validation change cannot silently break logging in again
- * (that bug shipped once already: see the isSignup note in Auth.tsx).
+ * Browser end to end test for the site's forms: signing up and logging in, the
+ * newsletter signup, event registration, consultation requests, written
+ * enquiries, the mobile menu and the phone logo intro. Drives the real forms in headless Chrome or
+ * Edge, over the same local server test:auth uses, so a client side change
+ * cannot silently break them (that bug shipped once already: see the isSignup
+ * note in Auth.tsx).
  *
  *   npm run test:auth:ui
  *
@@ -26,6 +28,36 @@ const EMAIL_PREFIX = `test-auth-ui-${Date.now().toString(36)}`;
 const EMAIL = `${EMAIL_PREFIX}@example.com`;
 const PASSWORD = 'Quiet-Harbour-7712';
 const NAME = 'Ada UI Test';
+const NEWSLETTER_EMAIL = `${EMAIL_PREFIX}-newsletter@example.com`;
+/** The one answer the newsletter endpoint gives, whatever state the address is in. */
+const NEWSLETTER_MESSAGE =
+  'Thanks. If that address is not already on the list, a confirmation link is on its way. Check your inbox and spam folder.';
+
+// --- email capture -----------------------------------------------------------
+// With no RESEND_API_KEY the API prints the message instead of sending it, and
+// that is how the newsletter check recovers the confirmation link.
+const logged = [];
+const originalWarn = console.warn;
+console.warn = (...args) => {
+  logged.push(args.map((value) => String(value)).join(' '));
+};
+
+function linksSince(mark) {
+  const text = logged.slice(mark).join('\n');
+  return [...text.matchAll(/newsletter\/confirm\?token=([A-Za-z0-9_-]+)/g)].map((match) => match[1]);
+}
+
+/** Removes the rows this run created, success or failure. */
+async function cleanupTestRows() {
+  const connection = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
+  if (!connection) return;
+  const { neon } = await import('@neondatabase/serverless');
+  const sql = neon(connection);
+  await sql.query('DELETE FROM newsletter_subscribers WHERE email LIKE $1', [`${EMAIL_PREFIX}%`]);
+  for (const table of ['event_registrations', 'consultation_bookings', 'enquiries']) {
+    await sql.query(`DELETE FROM ${table} WHERE email LIKE $1`, [`${EMAIL_PREFIX}%`]);
+  }
+}
 
 const results = [];
 let failures = 0;
@@ -183,6 +215,10 @@ async function main() {
   try {
     const browser = await launchBrowser();
     try {
+      // Reduced motion is emulated for the whole run: every form check below
+      // asserts what a visitor sees, and an animating shell would only add
+      // timing noise. The logo intro is the one thing that reduced motion
+      // switches off entirely, so the checks at the end turn it back on.
       const context = await browser.newContext({
         viewport: { width: 1280, height: 860 },
         reducedMotion: 'reduce',
@@ -291,10 +327,24 @@ async function main() {
         emptySignupSent ? 'a request went out' : 'no request',
       );
 
+      // The field and the country are selects, not free text boxes: the field
+      // list is what the dashboard and any future matching read, and a country
+      // should not be a spelling test.
+      const fieldSelect = page.locator('#auth-field');
+      const countrySelect = page.locator('#auth-country');
+      const fieldOptions = await fieldSelect.locator('option').allTextContents();
+      const countryOptions = await countrySelect.locator('option').allTextContents();
+      check(
+        6.2,
+        'The signup form offers a field list and a country list instead of free text',
+        fieldOptions.length >= 20 && countryOptions.length >= 100,
+        `${fieldOptions.length} fields, ${countryOptions.length} countries`,
+      );
+
       await page.locator('#auth-name').fill(NAME);
       await page.locator('#auth-email').fill(EMAIL);
-      await page.locator('#auth-field').fill('Data analysis');
-      await page.locator('#auth-country').fill('Nigeria');
+      await fieldSelect.selectOption('IT & Software');
+      await countrySelect.selectOption('Nigeria');
       await page.locator('#auth-password').fill(PASSWORD);
       await page.locator('#auth-acceptedTerms').check();
 
@@ -309,6 +359,24 @@ async function main() {
         page.url(),
       );
       check(8, 'The dashboard greets the account by name', true, `Hello ${NAME}`);
+
+      const savedDetails = await page.evaluate(() => {
+        const list = document.querySelector('dl');
+        if (!list) return null;
+        return Object.fromEntries(
+          [...list.querySelectorAll('dt')].map((term) => [
+            term.textContent?.trim() ?? '',
+            term.nextElementSibling?.textContent?.trim() ?? '',
+          ]),
+        );
+      });
+      check(
+        8.1,
+        'The field and country picked from the dropdowns are saved and shown back',
+        savedDetails?.['Field or main skill'] === 'IT & Software' &&
+          savedDetails?.['Country'] === 'Nigeria',
+        `field "${savedDetails?.['Field or main skill']}", country "${savedDetails?.['Country']}"`,
+      );
 
       // --- 5. Log out and log back in through the form -----------------------
       await page.getByRole('button', { name: 'Log out', exact: true }).click();
@@ -348,6 +416,381 @@ async function main() {
         sessionStatus === 401,
         `/api/auth/me ${sessionStatus}`,
       );
+
+      // --- 6. The newsletter form actually submits ---------------------------
+      // It once showed "Subscribed ✓" on a four second timer without sending a
+      // thing. These checks are what stops that coming back.
+      await page.goto(`${baseUrl}/blog`, { waitUntil: 'networkidle' });
+
+      const emptySubscribeSent = await submit(
+        page,
+        page.getByRole('button', { name: 'Subscribe', exact: true }),
+        'empty newsletter submit',
+      );
+      check(
+        13,
+        'An empty newsletter submit never reaches the server',
+        emptySubscribeSent === false,
+        emptySubscribeSent ? 'a request went out' : 'no request',
+      );
+
+      const mark = logged.length;
+      const newsletterInput = page.getByLabel('Email address for newsletter');
+      await newsletterInput.fill(NEWSLETTER_EMAIL);
+      const subscribeSent = await submit(
+        page,
+        page.getByRole('button', { name: 'Subscribe', exact: true }),
+        'newsletter subscribe',
+      );
+      const noticeShown = await page
+        .waitForFunction(
+          (expected) =>
+            [...document.querySelectorAll('[role=status]')].some(
+              (node) => node.textContent?.trim() === expected,
+            ),
+          NEWSLETTER_MESSAGE,
+          { timeout: 10000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      const clearedField = await newsletterInput.inputValue();
+      check(
+        14,
+        'Submitting the newsletter form sends a request, shows the server answer and clears the field',
+        subscribeSent === true && noticeShown && clearedField === '',
+        `sent ${subscribeSent}, notice ${noticeShown ? 'shown' : 'missing'}, field "${clearedField}"`,
+      );
+
+      const confirmToken = linksSince(mark).at(-1);
+      let confirmedInBrowser = false;
+      if (confirmToken) {
+        await page.goto(`${baseUrl}/newsletter/confirm?token=${encodeURIComponent(confirmToken)}`);
+        confirmedInBrowser = await page
+          .getByRole('heading', { name: 'Your subscription is confirmed.' })
+          .waitFor({ timeout: 15000 })
+          .then(() => true)
+          .catch(() => false);
+      }
+      check(
+        15,
+        'The emailed link confirms the subscription on its own page',
+        confirmedInBrowser,
+        confirmToken ? page.url() : 'no confirmation link was captured',
+      );
+
+      // --- 7. The lead forms actually submit --------------------------------
+      // Registration, booking and enquiry each used to answer from a timer. The
+      // request is what is asserted here, not the copy on the success card.
+      const leadEmails = {
+        event: `${EMAIL_PREFIX}-lead-event@example.com`,
+        booking: `${EMAIL_PREFIX}-lead-booking@example.com`,
+        enquiry: `${EMAIL_PREFIX}-lead-enquiry@example.com`,
+      };
+
+      await page.goto(`${baseUrl}/events`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: /Register free|Apply for a place/ }).first().click();
+      await page.getByLabel('Full name *').fill('Ada Lead');
+      await page.getByLabel('Work email *').fill(leadEmails.event);
+      await page.getByLabel('Organisation / company *').fill('Lead Test Ltd');
+      const registrationSent = await submit(
+        page,
+        page.getByRole('button', { name: /Reserve my free place|Apply for a place/ }).last(),
+        'event registration',
+      );
+      const registrationShown = await page
+        .getByRole('heading', { name: 'Registration received' })
+        .waitFor({ timeout: 15000 })
+        .then(() => true)
+        .catch(() => false);
+      check(
+        16,
+        'Registering for an event sends the details and shows the received card',
+        registrationSent === true && registrationShown,
+        `sent ${registrationSent}, confirmed ${registrationShown}`,
+      );
+
+      await page.goto(`${baseUrl}/consultation`, { waitUntil: 'networkidle' });
+      await page.getByLabel('Full name *').fill('Chidi Lead');
+      await page.getByLabel('Work email *').fill(leadEmails.booking);
+      await page.getByLabel('Phone or WhatsApp *').fill('+234 800 000 0001');
+      await page.getByLabel('Organisation or company name *').fill('Lead Test Ltd');
+      const bookingSent = await submit(
+        page,
+        page.getByRole('button', { name: /^Request / }),
+        'consultation request',
+      );
+      const bookingShown = await page
+        .getByRole('heading', { name: 'Consultation requested' })
+        .waitFor({ timeout: 15000 })
+        .then(() => true)
+        .catch(() => false);
+      check(
+        17,
+        'Requesting a consultation sends the slot and shows the requested card',
+        bookingSent === true && bookingShown,
+        `sent ${bookingSent}, confirmed ${bookingShown}`,
+      );
+
+      await page.getByRole('button', { name: 'Send a written enquiry' }).click();
+      await page.getByLabel('Your name *').fill('Chinelo Lead');
+      await page.getByLabel('Email address *').fill(leadEmails.enquiry);
+      await page.getByLabel('Subject *').fill('HR Retainership for a tech scale-up');
+      await page.getByLabel('Message *').fill('We need help formalising our people practices.');
+      const enquirySent = await submit(
+        page,
+        page.getByRole('button', { name: 'Send enquiry' }),
+        'written enquiry',
+      );
+      const enquiryShown = await page
+        .getByRole('heading', { name: 'Enquiry received' })
+        .waitFor({ timeout: 15000 })
+        .then(() => true)
+        .catch(() => false);
+      check(
+        18,
+        'Sending a written enquiry sends the message and shows the received card',
+        enquirySent === true && enquiryShown,
+        `sent ${enquirySent}, confirmed ${enquiryShown}`,
+      );
+
+      // --- 8. The mobile menu can be dismissed ------------------------------
+      // At phone width the only way out used to be the toggle that doubles as
+      // the hamburger; the panel itself had no close button and nothing else on
+      // the page would dismiss it.
+      await page.setViewportSize({ width: 390, height: 844 });
+      const menuPanel = page.locator('#mobile-menu');
+      const menuGone = () =>
+        page
+          .waitForFunction(() => !document.querySelector('#mobile-menu'), null, {
+            timeout: 5000,
+          })
+          .then(() => true)
+          .catch(() => false);
+
+      await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Open menu' }).click();
+      await menuPanel.waitFor({ state: 'visible', timeout: 5000 });
+      const closeBox = await menuPanel
+        .getByRole('button', { name: 'Close menu' })
+        .boundingBox();
+      // The panel animates its height open. Measuring it here also catches that
+      // animation stalling, which would leave an open menu one pixel tall.
+      const panelBox = await menuPanel.boundingBox();
+      check(
+        19,
+        'The mobile menu opens full height with a close button of its own, at least 40px square',
+        Boolean(closeBox) &&
+          closeBox.width >= 40 &&
+          closeBox.height >= 40 &&
+          Boolean(panelBox) &&
+          panelBox.height > 200,
+        `panel ${Math.round(panelBox?.height ?? 0)}px, close button ${closeBox ? `${closeBox.width}x${closeBox.height}` : 'missing'}`,
+      );
+
+      await menuPanel.getByRole('button', { name: 'Close menu' }).click();
+      const closedByButton = await menuGone();
+      await page.getByRole('button', { name: 'Open menu' }).click();
+      await menuPanel.waitFor({ state: 'visible', timeout: 5000 });
+      await page.keyboard.press('Escape');
+      const closedByEscape = await menuGone();
+      check(
+        20,
+        'The close button and the Escape key both dismiss the menu',
+        closedByButton && closedByEscape,
+        `button ${closedByButton}, escape ${closedByEscape}`,
+      );
+
+      await page.getByRole('button', { name: 'Open menu' }).click();
+      await menuPanel.waitFor({ state: 'visible', timeout: 5000 });
+      // A real tap on the page behind the panel, using raw mouse input so the
+      // pointerdown listener is what is being tested.
+      await page.mouse.click(20, 800);
+      const closedByOutsideTap = await menuGone();
+      check(
+        21,
+        'Tapping outside the mobile menu closes it',
+        closedByOutsideTap,
+        closedByOutsideTap ? 'closed' : 'stayed open',
+      );
+
+      // --- 9. The modal's close button survives a scroll --------------------
+      // The booking card scrolls internally. The close button used to sit in
+      // the header of that scrolling element, so on a phone one flick of the
+      // thumb took it off screen with no other way out but the backdrop.
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+      await page.getByRole('button', { name: 'Open menu' }).click();
+      await page.getByRole('button', { name: 'Schedule Consultation' }).click();
+      const modalClose = page.getByRole('button', { name: 'Close consultation modal' });
+      await modalClose.waitFor({ state: 'visible', timeout: 5000 });
+      const scrollState = await page.evaluate(() => {
+        const button = document.querySelector('[aria-label="Close consultation modal"]');
+        let node = button?.parentElement ?? null;
+        while (
+          node &&
+          !(node.scrollHeight > node.clientHeight + 1 && getComputedStyle(node).overflowY === 'auto')
+        ) {
+          node = node.parentElement;
+        }
+        if (!node) return null;
+        node.scrollTop = node.scrollHeight;
+        return { scrolled: node.scrollTop, height: node.scrollHeight };
+      });
+      const closeBoxAfterScroll = await modalClose.boundingBox();
+      const viewportHeight = page.viewportSize()?.height ?? 0;
+      check(
+        22,
+        'The consultation modal close button stays on screen while the form scrolls',
+        Boolean(scrollState) &&
+          scrollState.scrolled > 40 &&
+          Boolean(closeBoxAfterScroll) &&
+          closeBoxAfterScroll.y >= 0 &&
+          closeBoxAfterScroll.y + closeBoxAfterScroll.height <= viewportHeight,
+        `scrolled ${Math.round(scrollState?.scrolled ?? 0)}px, button at y=${Math.round(
+          closeBoxAfterScroll?.y ?? -1,
+        )} of ${viewportHeight}`,
+      );
+
+      await modalClose.click();
+      const modalClosed = await page
+        .getByRole('heading', { name: "Let's talk about your people setup" })
+        .waitFor({ state: 'detached', timeout: 5000 })
+        .then(() => true)
+        .catch(() => false);
+      check(
+        23,
+        'The close button still dismisses the booking card after scrolling',
+        modalClosed,
+        modalClosed ? 'closed' : 'stayed open',
+      );
+
+      // --- 10. Phones reveal the logo with CSS, not with SVG dots ------------
+      // The scatter animates dozens of SVG children from JavaScript, every one
+      // of them inside a scaled, promoted layer, so a phone pays a paint for
+      // every frame it shows. A phone is meant to get a single <img> carrying a
+      // transform/opacity animation instead: no dot layer, no per-frame script.
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.evaluate(() => sessionStorage.removeItem('pga_logo_animated'));
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('a[aria-label="People Growth Africa Home"] img', {
+        timeout: 10000,
+      });
+      const phoneIntro = await page.evaluate(() => {
+        const link = document.querySelector('a[aria-label="People Growth Africa Home"]');
+        const img = link.querySelector('img');
+        const style = getComputedStyle(img);
+        return {
+          svgs: link.querySelectorAll('svg').length,
+          dots: link.querySelectorAll('svg circle').length,
+          animation: style.animationName,
+          duration: style.animationDuration,
+          // The dot path drives itself with inline styles (the promoted mark,
+          // the dots' opacity). None of them should exist on a phone.
+          tweened: link.querySelectorAll('[style*="transform"], [style*="will-change"]').length,
+        };
+      });
+      check(
+        24,
+        'On a phone the logo intro is a CSS fade and scale with no dot layer at all',
+        phoneIntro.svgs === 0 &&
+          phoneIntro.dots === 0 &&
+          phoneIntro.animation === 'logo-reveal' &&
+          phoneIntro.tweened === 0,
+        `no svg (${phoneIntro.svgs}), animation "${phoneIntro.animation}" ${phoneIntro.duration}, ${phoneIntro.tweened} script tweened nodes`,
+      );
+
+      const phoneSettled = await page
+        .waitForFunction(
+          () => {
+            const img = document.querySelector(
+              'a[aria-label="People Growth Africa Home"] img',
+            );
+            return (
+              sessionStorage.getItem('pga_logo_animated') === 'true' &&
+              Boolean(img) &&
+              getComputedStyle(img).opacity === '1'
+            );
+          },
+          null,
+          { timeout: 5000, polling: 50 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      check(
+        25,
+        'The reveal lands on the full logo and is not replayed again that session',
+        phoneSettled,
+        phoneSettled ? 'landed at full opacity' : 'timed out',
+      );
+
+      // --- 11. The desktop scatter is left alone -----------------------------
+      await page.setViewportSize({ width: 1280, height: 860 });
+      await page.evaluate(() => sessionStorage.removeItem('pga_logo_animated'));
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('a[aria-label="People Growth Africa Home"] img', {
+        timeout: 10000,
+      });
+      const desktopIntro = await page.evaluate(() => {
+        const link = document.querySelector('a[aria-label="People Growth Africa Home"]');
+        return {
+          dots: link.querySelectorAll('svg circle').length,
+          animation: getComputedStyle(link.querySelector('img')).animationName,
+        };
+      });
+      check(
+        26,
+        'Above the phone breakpoint the logo still runs the sampled dot scatter',
+        desktopIntro.dots > 0 && desktopIntro.animation === 'none',
+        `${desktopIntro.dots} dots, mark animation "${desktopIntro.animation}"`,
+      );
+
+      // --- 12. Every text field on a form carries a placeholder --------------
+      // A placeholder is what tells a visitor the shape of an answer
+      // ("name@company.com", "At least 8 characters") without another line of
+      // help text. The reset form has two states, so both are visited.
+      const formPages = [
+        '/auth#signup',
+        '/auth#login',
+        '/forgot-password',
+        '/forgot-password?token=pga-ui-test-token',
+      ];
+      const placeholderReport = {};
+      for (const path of formPages) {
+        await page.goto(`${baseUrl}${path}`, { waitUntil: 'networkidle' });
+        placeholderReport[path] = await page.evaluate(() => {
+          const textLike = ['text', 'email', 'tel', 'password', 'search', 'url', 'number'];
+          const fields = [...document.querySelectorAll('input, textarea')].filter(
+            (element) => {
+              const type = (element.getAttribute('type') ?? 'text').toLowerCase();
+              return textLike.includes(type) && element.offsetParent !== null;
+            },
+          );
+          return {
+            checked: fields.length,
+            missing: fields
+              .filter((element) => !element.getAttribute('placeholder'))
+              .map((element) => element.id || element.name || element.type),
+          };
+        });
+      }
+      const emptyPages = Object.entries(placeholderReport)
+        .filter(([, report]) => report.checked === 0)
+        .map(([path]) => path);
+      const missingPlaceholders = Object.entries(placeholderReport).flatMap(
+        ([path, report]) => report.missing.map((field) => `${path} ${field}`),
+      );
+      const fieldsChecked = Object.values(placeholderReport).reduce(
+        (total, report) => total + report.checked,
+        0,
+      );
+      check(
+        27,
+        'Every visible text field on the signup, login and reset forms has a placeholder',
+        emptyPages.length === 0 && missingPlaceholders.length === 0,
+        missingPlaceholders.length
+          ? `missing on ${missingPlaceholders.join(', ')}`
+          : `${fieldsChecked} fields across ${formPages.length} pages`,
+      );
     } finally {
       await browser.close().catch(() => {});
     }
@@ -356,6 +799,8 @@ async function main() {
     console.error(`\nERROR  ${error instanceof Error ? error.message : String(error)}`);
     if (error instanceof Error && error.stack) console.error(error.stack);
   } finally {
+    console.warn = originalWarn;
+    await cleanupTestRows().catch(() => {});
     rmSync(userDataDir, { recursive: true, force: true });
     await server.close();
   }

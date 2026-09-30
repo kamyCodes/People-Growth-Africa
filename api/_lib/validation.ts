@@ -13,6 +13,15 @@ const COMPANY_MAX = 150;
 const FIELD_MAX = 100;
 const COUNTRY_MAX = 60;
 const PASSWORD_MAX = 128;
+const PHONE_MAX = 40;
+const ORGANISATION_MAX = 150;
+const ROLE_MAX = 100;
+const SUBJECT_MAX = 150;
+const MESSAGE_MAX = 2000;
+const TEAM_SIZE_MAX = 40;
+const SERVICE_MAX = 80;
+const SLOT_MAX = 20;
+const EVENT_SLUG_MAX = 120;
 
 function requiredText(max: number, label: string, message?: string): z.ZodString {
   return z
@@ -99,6 +108,96 @@ export const resetPasswordSchema = z.strictObject({
 
 export const verifyEmailSchema = z.strictObject({
   token: z.string().trim().min(20, 'That verification link is not valid.').max(200),
+});
+
+const optionalPhone = optionalText(PHONE_MAX, 'phone');
+
+const organisation = requiredText(
+  ORGANISATION_MAX,
+  'organisation',
+  'Enter your organisation or company name.',
+);
+
+/** Slugs are chosen in src/data/events.ts, so only that shape is accepted. */
+const eventSlug = z
+  .string()
+  .trim()
+  .min(1, 'Choose an event.')
+  .max(EVENT_SLUG_MAX, `Event must be ${EVENT_SLUG_MAX} characters or fewer.`)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'That event could not be found.');
+
+export const MEETING_FORMATS = ['virtual', 'in-person'] as const;
+export const ENQUIRY_SOURCES = ['consultation-modal', 'consultation-page'] as const;
+
+/** The three public lead forms: registration, booking and written enquiry. */
+export const eventRegistrationSchema = z.strictObject({
+  eventSlug,
+  name: requiredText(NAME_MAX, 'full name'),
+  email,
+  phone: optionalPhone,
+  organisation,
+  role: optionalText(ROLE_MAX, 'role'),
+  question: optionalText(MESSAGE_MAX, 'question'),
+});
+
+export const consultationBookingSchema = z.strictObject({
+  name: requiredText(NAME_MAX, 'full name'),
+  email,
+  phone: optionalPhone,
+  organisation,
+  teamSize: optionalText(TEAM_SIZE_MAX, 'team size'),
+  service: optionalText(SERVICE_MAX, 'service'),
+  meetingFormat: z.enum(MEETING_FORMATS),
+  // A calendar day, not a timestamp: the slot carries the time.
+  preferredDate: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a date for the consultation.'),
+  preferredSlot: z
+    .string()
+    .trim()
+    .min(1, 'Choose a time.')
+    .max(SLOT_MAX, 'That time is not available.'),
+  notes: optionalText(MESSAGE_MAX, 'notes'),
+});
+
+export const enquirySchema = z.strictObject({
+  name: requiredText(NAME_MAX, 'full name'),
+  email,
+  phone: optionalPhone,
+  subject: requiredText(SUBJECT_MAX, 'subject'),
+  message: requiredText(MESSAGE_MAX, 'message', 'Tell us how we can help.'),
+  source: z.enum(ENQUIRY_SOURCES),
+});
+
+/**
+ * The booking calendar offers the next fortnight, weekdays and Saturdays. A
+ * request outside that is a client bug or a deliberate probe, so it is refused
+ * with the same field message shape the rest of the app uses.
+ */
+export function assertBookableDate(value: string): void {
+  const picked = new Date(`${value}T00:00:00Z`);
+  const roundTrips = !Number.isNaN(picked.getTime()) && picked.toISOString().slice(0, 10) === value;
+  const now = new Date();
+  const todayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const daysAhead = roundTrips ? (picked.getTime() - todayUtc) / 86_400_000 : -1;
+
+  const field = (message: string) => {
+    throw new ApiError(400, 'validation_failed', message, { preferredDate: message });
+  };
+
+  if (!roundTrips || daysAhead < 0 || daysAhead > 90) {
+    field('Choose a date within the next three months.');
+  }
+  if (picked.getUTCDay() === 0) {
+    field('Our office is closed on Sundays. Choose a weekday or a Saturday.');
+  }
+}
+
+export const newsletterSubscribeSchema = z.strictObject({ email });
+
+export const newsletterConfirmSchema = z.strictObject({
+  token: z.string().trim().min(20, 'That confirmation link is not valid.').max(200),
 });
 
 /**

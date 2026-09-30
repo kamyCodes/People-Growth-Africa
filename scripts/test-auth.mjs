@@ -96,7 +96,9 @@ const talentBody = (email = TALENT_EMAIL) => ({
   name: 'Ada Test',
   email,
   password: GOOD_PASSWORD,
-  field: 'Data analysis',
+  // One of the values the signup form's field list offers, so this stays a
+  // realistic payload if the API ever starts checking that list.
+  field: 'IT & Software',
   country: 'Nigeria',
   availability: 'available_now',
   acceptedTerms: true,

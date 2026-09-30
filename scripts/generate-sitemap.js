@@ -110,9 +110,9 @@ console.log('Generated robots.txt with AI crawler permissions.');
 // 3. Generate llms.txt (AI Model Overview & Directory Standard)
 let llmsTxt = `# People Growth Africa (PGA)
 
-> Institutional People Systems & Enterprise HR Architecture for High-Growth African Ventures.
+> Practical HR and people systems for growing African businesses.
 
-Headquartered in Lagos, Nigeria, People Growth Africa (PGA) specializes in architecting structured, culturally congruent, and legally compliant people systems for SMEs, agribusinesses, and growth-stage enterprises across the African continent.
+Based in Apapa, Lagos, People Growth Africa (PGA) helps SMEs, agribusinesses and growing companies across Africa build structured, compliant and genuinely useful people systems.
 
 ## Core Specialities & Advisory Portfolio
 - HR Strategic Advisory & Retainerships
@@ -129,8 +129,8 @@ Headquartered in Lagos, Nigeria, People Growth Africa (PGA) specializes in archi
 - Advisory Retainerships & Services: ${DOMAIN}/#services
 - Firm Overview & Mission: ${DOMAIN}/#about
 - Upcoming Events & Workshops: ${DOMAIN}/events
-- Enterprise Knowledge Hub / Blog: ${DOMAIN}/blog
-- Book Advisory Consultation: ${DOMAIN}/consultation
+- Knowledge Hub / Blog: ${DOMAIN}/blog
+- Book a Free Consultation: ${DOMAIN}/consultation
 
 ## Knowledge Articles & Insights
 `;

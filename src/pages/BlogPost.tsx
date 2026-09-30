@@ -37,9 +37,9 @@ export default function BlogPostPage() {
   }
 
   const categoryLabel = categories.find((c) => c.id === post.category)?.label ?? post.category;
-  const formattedDate = new Date(post.date).toLocaleDateString('en-US', {
-    month: 'long',
+  const formattedDate = new Date(post.date).toLocaleDateString('en-GB', {
     day: 'numeric',
+    month: 'long',
     year: 'numeric',
   });
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -298,7 +298,7 @@ export default function BlogPostPage() {
                       <div className="flex items-center gap-3 mt-4 pt-3 border-t border-charcoal/6">
                         <span className="font-[family-name:var(--font-body)] text-[0.78rem] text-charcoal/40">{rel.readTime} min read</span>
                         <span className="font-[family-name:var(--font-body)] text-[0.78rem] text-charcoal/40">
-                          {new Date(rel.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {new Date(rel.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                       </div>
                     </div>
@@ -316,10 +316,10 @@ export default function BlogPostPage() {
         <div className="relative z-[1] max-w-[1200px] mx-auto px-6">
           <AnimateOnScroll>
             <h2 className="font-[family-name:var(--font-heading)] font-semibold text-white text-2xl mb-4">
-              Ready to Transform Your People Practices?
+              Ready to Fix Your People Practices?
             </h2>
             <p className="font-[family-name:var(--font-body)] text-white/75 mb-8 max-w-[450px] mx-auto">
-              Let's discuss how People Growth Africa can help your business build the people systems it needs to thrive.
+              Tell us where you are now, and we will show you what your people systems could look like.
             </p>
             <a href="mailto:hello@peoplegrowthafrica.com" className="inline-flex items-center gap-2 px-8 py-3.5 bg-terracotta text-white font-semibold rounded-full hover:bg-brand-green transition-all duration-300">
               Book Your Free Consultation →

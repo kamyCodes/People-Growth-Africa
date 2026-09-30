@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import HoverPill from './HoverPill';
 
 const currentYear = new Date().getFullYear();
 
@@ -108,7 +109,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-5 font-[family-name:var(--font-body)]">Programs &amp; Insights</h4>
+            <h4 className="text-sm font-semibold uppercase tracking-wider text-white mb-5 font-[family-name:var(--font-body)]">Programmes &amp; Insights</h4>
             <ul className="flex flex-col gap-3">
               <li><Link to="/events" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Events &amp; Webinars</Link></li>
               <li><Link to="/events" className="text-[0.9rem] text-white/60 hover:text-brand-green transition-colors">Mentorship Cohorts</Link></li>
@@ -155,10 +156,12 @@ export default function Footer() {
                 target="_blank"
                 rel="noopener noreferrer me"
                 aria-label={`${ORG_NAME} on ${social.name}`}
-                className="w-9 h-9 rounded-full bg-white/8 flex items-center justify-center hover:bg-brand-green transition-all hover:-translate-y-0.5"
-                title={social.name}
+                className="group relative w-9 h-9 rounded-full bg-white/8 flex items-center justify-center hover:bg-brand-green transition-all hover:-translate-y-0.5"
               >
                 {social.icon}
+                {/* Opens upwards: these sit at the foot of the page, so a pill
+                    below them would fall outside the viewport. */}
+                <HoverPill label={social.name} placement="top" />
               </a>
             ))}
           </div>

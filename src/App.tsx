@@ -10,6 +10,7 @@ import BookConsultation from './pages/BookConsultation';
 import Auth from './pages/Auth';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
+import NewsletterConfirm from './pages/NewsletterConfirm';
 import TalentDashboard from './pages/TalentDashboard';
 import EmployerDashboard from './pages/EmployerDashboard';
 import Terms from './pages/Terms';
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="/book" element={<BookConsultation />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/auth/verify" element={<VerifyEmail />} />
+            <Route path="/newsletter/confirm" element={<NewsletterConfirm />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/talent/dashboard" element={<TalentDashboard />} />
             <Route path="/employer/dashboard" element={<EmployerDashboard />} />

@@ -140,6 +140,7 @@ export default function ForgotPassword() {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="new-password"
+                      placeholder="At least 8 characters"
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       className={`${inputClass} pr-20`}
@@ -170,6 +171,7 @@ export default function ForgotPassword() {
                     name="confirm"
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
+                    placeholder="Repeat the new password"
                     value={confirm}
                     onChange={(event) => setConfirm(event.target.value)}
                     className={inputClass}
@@ -206,6 +208,7 @@ export default function ForgotPassword() {
                     autoComplete="email"
                     autoCapitalize="none"
                     spellCheck={false}
+                    placeholder="name@company.com"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     className={inputClass}

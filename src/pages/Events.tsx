@@ -27,8 +27,8 @@ export default function Events() {
   return (
     <>
       <SEO
-        title="Webinars & Mentorship Programs | People Growth Africa"
-        description="Join executive webinars, masterclasses, and intensive mentorship cohorts designed to accelerate people systems and HR leadership across Africa."
+        title="Webinars & Mentorship Programmes | People Growth Africa"
+        description="Join practical webinars, masterclasses and small mentorship cohorts built to strengthen people systems and HR leadership across Africa."
       />
 
       {/* Hero Banner */}
@@ -37,16 +37,16 @@ export default function Events() {
         <div className="max-w-[1200px] mx-auto px-6 relative z-10">
           <AnimateOnScroll>
             <p className="font-[family-name:var(--font-body)] text-xs font-semibold uppercase tracking-[0.15em] text-mint mb-3">
-              Knowledge &bull; Peer Leadership &bull; Practical Execution
+              Practical &bull; Peer-led &bull; Built for Africa
             </p>
             <h1
               className="font-[family-name:var(--font-heading)] font-semibold text-white leading-[1.15] mb-5 max-w-[800px]"
               style={{ fontSize: 'clamp(2.4rem, 5vw, 3.8rem)' }}
             >
-              Executive Webinars, Masterclasses &amp; Mentorship Cohorts
+              Webinars, Masterclasses &amp; Mentorship Cohorts
             </h1>
             <p className="font-[family-name:var(--font-body)] text-white/80 text-base md:text-lg max-w-[680px] leading-relaxed mb-8">
-              Explore upcoming live masterclasses, statutory compliance briefings, and structured peer mentorship cohorts tailored for African business leaders and HR practitioners.
+              Practical sessions for African business leaders and HR practitioners: live masterclasses, compliance briefings and small mentorship cohorts.
             </p>
           </AnimateOnScroll>
 
@@ -57,25 +57,25 @@ export default function Events() {
                 <span className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-mint block">
                   100%
                 </span>
-                <span className="text-xs text-white/70">Practical Case Studies</span>
+                <span className="text-xs text-white/70">Practical case studies</span>
               </div>
               <div>
                 <span className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-mint block">
                   Pan-African
                 </span>
-                <span className="text-xs text-white/70">Context &amp; Legal Rigour</span>
+                <span className="text-xs text-white/70">Nigerian and African legal context</span>
               </div>
               <div>
                 <span className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-mint block">
                   1-on-1
                 </span>
-                <span className="text-xs text-white/70">Executive Advisory Access</span>
+                <span className="text-xs text-white/70">Direct access to senior advisors</span>
               </div>
               <div>
                 <span className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-bold text-mint block">
                   Capped
                 </span>
-                <span className="text-xs text-white/70">Cohort Sizes for High Quality</span>
+                <span className="text-xs text-white/70">Small cohorts, kept small on purpose</span>
               </div>
             </div>
           </AnimateOnScroll>
@@ -109,7 +109,7 @@ export default function Events() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search topic or speaker..."
+                  placeholder="Search topic or speaker…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 bg-white rounded-full border border-charcoal/15 text-xs text-charcoal focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green transition-all"
@@ -141,10 +141,10 @@ export default function Events() {
           ) : (
             <div className="text-center py-20 bg-white rounded-[20px] border border-charcoal/10 p-8">
               <h3 className="font-[family-name:var(--font-heading)] text-xl font-semibold text-charcoal mb-2">
-                No Programs Found
+                No programmes found
               </h3>
               <p className="text-sm text-charcoal/60 max-w-md mx-auto mb-6">
-                No active events match your current filter or search criteria. Try selecting another category or clear your search.
+                Nothing matches this filter. Try another category, or clear your search.
               </p>
               <button
                 onClick={() => {
@@ -153,7 +153,7 @@ export default function Events() {
                 }}
                 className="px-6 py-2.5 bg-deep-green text-white text-xs font-semibold rounded-full hover:bg-brand-green transition-all cursor-pointer"
               >
-                Reset Filters
+                Show everything
               </button>
             </div>
           )}
@@ -163,20 +163,20 @@ export default function Events() {
             <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-brand-green/20 blur-3xl pointer-events-none" />
             <div className="relative z-10 max-w-2xl">
               <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-mint text-xs font-semibold uppercase tracking-wider mb-3">
-                Bespoke In-House Programs
+                Bespoke in-house programmes
               </span>
               <h3 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-semibold leading-tight mb-3">
-                Need Tailored Masterclasses for Your Management Team?
+                Need training built for your own management team?
               </h3>
               <p className="font-[family-name:var(--font-body)] text-white/80 text-sm md:text-base leading-relaxed mb-6">
-                We design custom internal training academies, Nigerian labour compliance workshops, and manager enablement series for organizations scaling across Nigeria and Africa.
+                We design internal training academies, Nigerian labour compliance workshops and manager programmes for organisations growing across Nigeria and Africa.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link
                   to="/#contact"
                   className="px-7 py-3.5 bg-terracotta text-white text-xs md:text-sm font-semibold rounded-full hover:bg-brand-green transition-all shadow-sm"
                 >
-                  Request In-House Workshop Proposal →
+                  Request a proposal →
                 </Link>
               </div>
             </div>

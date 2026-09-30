@@ -12,6 +12,8 @@
     "serve:api": "node scripts/api-server.mjs",
     "test:auth": "node scripts/test-auth.mjs",
     "test:auth:ui": "node scripts/test-auth-ui.mjs",
+    "test:newsletter": "node scripts/test-newsletter.mjs",
+    "test:leads": "node scripts/test-leads.mjs",
     "check:api": "node scripts/check-api-imports.mjs",
     "preview": "vite preview"
   },
