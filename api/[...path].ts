@@ -28,8 +28,31 @@ function routePath(url: string | undefined): string {
   return trimmed === '' ? '/' : trimmed;
 }
 
+/**
+ * Where the endpoint name lives for a given request.
+ *
+ * The site's SPA rewrite would otherwise swallow every /api request (it rewrites
+ * to index.html, which exists, so it always wins), so vercel.json sends /api/* to
+ * this function first. That rewrite arrives with the endpoint in the `path` query
+ * parameter the platform generated from `:path*` - `/api/newsletter/subscribe`
+ * becomes `path=newsletter/subscribe` - while `req.url` then reads
+ * `/api/[...path]`, which is not an endpoint. A request that reaches the function
+ * unprefixed still carries the endpoint in `req.url`, so both are tried.
+ */
+function routeKey(req: VercelRequest): string {
+  const captured = req.query.path;
+  const fromQuery = Array.isArray(captured)
+    ? captured.join('/')
+    : typeof captured === 'string'
+      ? captured
+      : '';
+
+  if (fromQuery) return routePath(`/api/${fromQuery.replace(/^\/+/, '')}`);
+  return routePath(req.url);
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
-  const route = ROUTES[routePath(req.url)];
+  const route = ROUTES[routeKey(req)];
 
   if (!route) {
     sendJson(res, 404, { error: 'No such endpoint.', code: 'not_found' });
