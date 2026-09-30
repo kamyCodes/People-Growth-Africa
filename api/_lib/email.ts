@@ -1,10 +1,17 @@
 import { Resend } from 'resend';
 
+import { renderEmail, renderLeadEmail } from './email-template.js';
+
 /**
  * Transactional email. When RESEND_API_KEY is not configured the message is
  * logged instead of sent, so local work and preview deploys stay usable. The
  * links themselves are only ever printed outside production, because a reset
  * link in a log is a reset link for anyone who can read the log.
+ *
+ * Every message carries both parts: the HTML in api/_lib/email-template.ts and
+ * the plain text built here. The text is not a courtesy - it is what a
+ * text-only client shows, it is what a spam filter reads, and it is the only
+ * part the log prints, so the tests keep finding links where they always did.
  */
 
 const FROM_ADDRESS =
@@ -29,6 +36,8 @@ async function sendEmail(message: {
   to: string;
   subject: string;
   text: string;
+  /** The branded version. Falls back to the text alone when it is absent. */
+  html?: string;
   /** The person to answer, when the mail is a notification about them. */
   replyTo?: string;
   /** Which flow sent this, so the logs name it. */
@@ -43,6 +52,8 @@ async function sendEmail(message: {
       );
       return;
     }
+    // Only the text is printed: the HTML would bury the log, and the confirm
+    // link the tests read out of it would appear three times over.
     console.warn(
       [
         `[${tag}] RESEND_API_KEY is not set, so no email was sent. Message follows.`,
@@ -61,6 +72,7 @@ async function sendEmail(message: {
       to: message.to,
       subject: message.subject,
       text: message.text,
+      ...(message.html ? { html: message.html } : {}),
       ...(message.replyTo ? { replyTo: message.replyTo } : {}),
     });
     if (error) console.error(`[${tag}] email send failed`, error);
@@ -85,6 +97,20 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
       'This link works once and expires in 24 hours.',
       'If you did not create an account, you can ignore this message.',
     ].join('\n'),
+    html: renderEmail({
+      preheader: 'One tap confirms this address and your account is ready.',
+      heading: 'Confirm your email address',
+      paragraphs: [
+        'Welcome to People Growth Africa. Confirm this address to finish setting up your account.',
+      ],
+      action: { label: 'Confirm email address', url: link },
+      notes: [
+        'This link works once and expires in 24 hours.',
+        'If you did not create an account, you can ignore this message.',
+      ],
+      reason: 'You are getting this because this address was used to create a People Growth Africa account.',
+      site: appUrl(),
+    }),
   });
 }
 
@@ -102,6 +128,20 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
       'This link works once and expires in 1 hour.',
       'If this was not you, you can ignore this message. Your password is unchanged.',
     ].join('\n'),
+    html: renderEmail({
+      preheader: 'The link works once and expires in an hour.',
+      heading: 'Reset your password',
+      paragraphs: [
+        'Someone asked to reset the password for this email address. Choose a new one to get back in.',
+      ],
+      action: { label: 'Choose a new password', url: link },
+      notes: [
+        'This link works once and expires in 1 hour.',
+        'If this was not you, you can ignore this message. Your password is unchanged.',
+      ],
+      reason: 'You are getting this because a password reset was requested for this address.',
+      site: appUrl(),
+    }),
   });
 }
 
@@ -130,6 +170,12 @@ export async function sendLeadNotification(input: {
     replyTo: input.replyTo,
     subject: `${input.kind}: ${input.replyTo}`,
     text: [...input.lines, '', `Reply to this email to answer ${input.replyTo}.`].join('\n'),
+    html: renderLeadEmail({
+      kind: input.kind,
+      lines: input.lines,
+      replyTo: input.replyTo,
+      site: appUrl(),
+    }),
   });
 }
 
@@ -152,6 +198,20 @@ export async function sendNewsletterConfirmationEmail(to: string, token: string)
       'This link works once and expires in 48 hours.',
       'If you did not ask for this, ignore this message and nothing more will be sent.',
     ].join('\n'),
+    html: renderEmail({
+      preheader: 'One tap and our insights will start arriving.',
+      heading: 'Confirm your subscription',
+      paragraphs: [
+        'Thanks for asking for People Growth Africa insights. One tap below and you are on the list.',
+      ],
+      action: { label: 'Confirm subscription', url: link },
+      notes: [
+        'This link works once and expires in 48 hours.',
+        'If you did not ask for this, ignore this message and nothing more will be sent.',
+      ],
+      reason: 'You are getting this because this address asked to subscribe to People Growth Africa insights.',
+      site: appUrl(),
+    }),
   });
 }
 
@@ -169,5 +229,18 @@ export async function sendPasswordChangedEmail(to: string): Promise<void> {
       'If this was you, nothing further is needed.',
       'If it was not you, reset the password again immediately and reply to this message so we can help.',
     ].join('\n'),
+    html: renderEmail({
+      preheader: 'Every signed in device has been logged out.',
+      heading: 'Your password was changed',
+      paragraphs: [
+        'The password on this account has just been changed, and every signed in device has been logged out.',
+        'If this was you, nothing further is needed.',
+      ],
+      notes: [
+        'If it was not you, reset the password again immediately and reply to this message so we can help.',
+      ],
+      reason: 'You are getting this because the password on this account was just changed.',
+      site: appUrl(),
+    }),
   });
 }

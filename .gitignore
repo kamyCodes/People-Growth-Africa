@@ -33,3 +33,6 @@ dist-ssr
 
 # Added by `vercel link`: project and team ids for this checkout.
 .vercel
+
+# Locally rendered email previews, opened in the browser during design work.
+public/email-preview

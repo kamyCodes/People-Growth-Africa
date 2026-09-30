@@ -554,9 +554,13 @@ async function main() {
       );
 
       // --- 8. The mobile menu can be dismissed ------------------------------
-      // At phone width the only way out used to be the toggle that doubles as
-      // the hamburger; the panel itself had no close button and nothing else on
-      // the page would dismiss it.
+      // The panel briefly carried a close button of its own while the header
+      // toggle rotated its bars into an X, which left two controls with the same
+      // accessible name stacked in one column. The header control is a drawn
+      // cross now and the only close on screen, so what is pinned here is that
+      // there is exactly one of them, that it is the toggle the panel belongs
+      // to, that it shows a cross rather than rotated bars, and that it is still
+      // big enough to hit.
       await page.setViewportSize({ width: 390, height: 844 });
       const menuPanel = page.locator('#mobile-menu');
       const menuGone = () =>
@@ -595,22 +599,49 @@ async function main() {
           { timeout: 8000, polling: 100 },
         )
         .catch(() => false);
-      const closeBox = await menuPanel
-        .getByRole('button', { name: 'Close menu' })
-        .boundingBox();
+      // The two glyphs sit on top of each other and only the opacity swaps, so
+      // read them once the swap has finished rather than on whichever frame the
+      // machine happened to be on.
+      await page
+        .waitForFunction(
+          () => {
+            const button = document.querySelector('nav button[aria-controls="mobile-menu"]');
+            const glyphs = button ? [...button.querySelectorAll('svg')] : [];
+            return glyphs.length === 2 && Number(getComputedStyle(glyphs[1]).opacity) > 0.99;
+          },
+          null,
+          { timeout: 3000 },
+        )
+        .catch(() => false);
+
+      const toggle = page.locator('nav button[aria-controls="mobile-menu"]');
+      const closeCount = await page.getByRole('button', { name: 'Close menu' }).count();
+      const panelOwnClose = await menuPanel.getByRole('button', { name: 'Close menu' }).count();
+      const closeBox = await toggle.boundingBox();
       const panelBox = await menuPanel.boundingBox();
+      const glyphs = await page.evaluate(() => {
+        const button = document.querySelector('nav button[aria-controls="mobile-menu"]');
+        const svgs = button ? [...button.querySelectorAll('svg')] : [];
+        if (svgs.length !== 2) return null;
+        return svgs.map((svg) => Number(getComputedStyle(svg).opacity).toFixed(2));
+      });
       check(
         19,
-        'The mobile menu opens full height with a close button of its own, at least 40px square',
-        Boolean(closeBox) &&
+        'The mobile menu opens full height under a single close control, a cross in the header, at least 40px square',
+        closeCount === 1 &&
+          panelOwnClose === 0 &&
+          glyphs !== null &&
+          glyphs[0] === '0.00' &&
+          glyphs[1] === '1.00' &&
+          Boolean(closeBox) &&
           closeBox.width >= 40 &&
           closeBox.height >= 40 &&
           Boolean(panelBox) &&
           panelBox.height > 200,
-        `panel ${Math.round(panelBox?.height ?? 0)}px, close button ${closeBox ? `${closeBox.width}x${closeBox.height}` : 'missing'}`,
+        `panel ${Math.round(panelBox?.height ?? 0)}px, close controls ${closeCount} (panel has ${panelOwnClose}), toggle ${closeBox ? `${closeBox.width}x${closeBox.height}` : 'missing'}, bars/cross ${glyphs ? glyphs.join('/') : 'missing'}`,
       );
 
-      await menuPanel.getByRole('button', { name: 'Close menu' }).click();
+      await page.getByRole('button', { name: 'Close menu' }).click();
       const closedByButton = await menuGone();
       await page.getByRole('button', { name: 'Open menu' }).click();
       await menuPanel.waitFor({ state: 'visible', timeout: 5000 });
@@ -618,7 +649,7 @@ async function main() {
       const closedByEscape = await menuGone();
       check(
         20,
-        'The close button and the Escape key both dismiss the menu',
+        'The header close control and the Escape key both dismiss the menu',
         closedByButton && closedByEscape,
         `button ${closedByButton}, escape ${closedByEscape}`,
       );

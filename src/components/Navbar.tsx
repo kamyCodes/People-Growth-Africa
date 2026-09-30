@@ -7,6 +7,14 @@ import { dashboardPath } from '../lib/authClient';
 import HoverPill from './HoverPill';
 import LogoIntroAnimation from './LogoIntroAnimation';
 
+/**
+ * The mobile toggle's two glyphs. Both are drawn at the same size and place, and
+ * only the opacity swaps, so the change reads as one control turning into
+ * another rather than as two different buttons.
+ */
+const toggleGlyph =
+  'absolute h-6 w-6 stroke-current fill-none stroke-2 transition-opacity duration-200 motion-reduce:transition-none';
+
 const baseNavLinks = [
   { to: '/#services', label: 'Services' },
   { to: '/#about', label: 'About' },
@@ -195,35 +203,36 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Toggle */}
+        {/* Mobile Toggle. This is the only close control the open panel has, so
+            the bars swap for a drawn cross rather than rotating into one: a
+            rotated hamburger still reads as a hamburger to anyone who did not
+            watch it change. h-11 w-11 keeps the tap target past the 40px the
+            panel's own button used to provide. */}
         <button
           ref={toggleRef}
-          className="md:hidden bg-transparent border-none cursor-pointer p-2 text-white"
+          type="button"
+          className="md:hidden relative inline-flex h-11 w-11 items-center justify-center bg-transparent border-none cursor-pointer text-white"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
           aria-expanded={mobileOpen}
           aria-controls="mobile-menu"
         >
-          <span
-            className="block w-6 h-0.5 bg-white my-1.5 transition-all"
-            style={{
-              transform: mobileOpen
-                ? 'rotate(45deg) translate(4px, 4px)'
-                : 'none',
-            }}
-          />
-          <span
-            className="block w-6 h-0.5 bg-white my-1.5 transition-all"
-            style={{ opacity: mobileOpen ? 0 : 1 }}
-          />
-          <span
-            className="block w-6 h-0.5 bg-white my-1.5 transition-all"
-            style={{
-              transform: mobileOpen
-                ? 'rotate(-45deg) translate(4px, -4px)'
-                : 'none',
-            }}
-          />
+          <svg
+            className={`${toggleGlyph} ${mobileOpen ? 'opacity-0' : 'opacity-100'}`}
+            viewBox="0 0 24 24"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M3 7h18M3 12h18M3 17h18" />
+          </svg>
+          <svg
+            className={`${toggleGlyph} ${mobileOpen ? 'opacity-100' : 'opacity-0'}`}
+            viewBox="0 0 24 24"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
         </button>
       </div>
 
@@ -239,31 +248,7 @@ export default function Navbar() {
             transition={{ duration: 0.25 }}
             className="md:hidden bg-deep-green border-t border-white/10 overflow-hidden shadow-2xl"
           >
-            {/* The toggle above turns into an X, but it sits at the edge of the
-                screen and is easy to miss. This is the close button that can
-                be seen and hit without aiming. */}
-            <div className="flex items-center justify-between px-6 pt-4 pb-1">
-              <span className="font-[family-name:var(--font-body)] text-[0.7rem] font-semibold uppercase tracking-[0.15em] text-mint">
-                Menu
-              </span>
-              <button
-                type="button"
-                onClick={() => setMobileOpen(false)}
-                aria-label="Close menu"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition-colors motion-reduce:transition-none hover:bg-white/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-mint focus-visible:ring-offset-2 focus-visible:ring-offset-deep-green"
-              >
-                <svg
-                  className="h-4 w-4 stroke-current fill-none stroke-2 stroke-linecap-round stroke-linejoin-round"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="px-6 pb-6 pt-2 flex flex-col gap-4">
+            <div className="px-6 pb-6 pt-5 flex flex-col gap-4">
               {currentNavLinks.map((link) =>
                 link.to.startsWith('/#') ? (
                   <button
