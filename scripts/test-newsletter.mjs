@@ -205,38 +205,44 @@ async function main() {
       );
     }
 
-    // 5. ...and the row shows it, with the spent link cleared.
+    // 5. ...and the row shows it. The link's hash stays on the row on purpose:
+    //    it is one-way, and a row that still carries it is how a replayed link
+    //    is recognised and answered "already confirmed" instead of an error.
     if (sql && token) {
       const row = (await subscriberRow(sql, EMAIL_A))[0];
+      const expectedHash = createHash('sha256').update(token).digest('hex');
       check(
         5,
-        'The row is confirmed and its link is cleared',
+        'The row is confirmed, the expiry is cleared, and the spent link stays recognisable',
         Boolean(row) &&
           row.status === 'confirmed' &&
           Boolean(row.confirmed_at) &&
-          row.confirm_token_hash === null &&
-          row.confirm_expires_at === null,
-        row ? `status ${row.status}, link ${row.confirm_token_hash === null ? 'cleared' : 'still stored'}` : 'no row',
+          row.confirm_expires_at === null &&
+          row.confirm_token_hash === expectedHash,
+        row ? `status ${row.status}, link ${row.confirm_token_hash === expectedHash ? 'kept for replay answers' : 'UNEXPECTED'}` : 'no row',
       );
     } else {
-      skipCheck(5, 'The row is confirmed and its link is cleared', 'no database access or no captured link');
+      skipCheck(5, 'The row is confirmed with its expiry cleared', 'no database access or no captured link');
     }
 
-    // 6. A link works once.
+    // 6. A link works once, and a replay is told as success: the person is
+    //    already subscribed, which is what they were trying to achieve. The
+    //    error text used to say "already used or expired" for this case, which
+    //    sent confirmed subscribers looking for an email that was never coming.
     const replay = token ? await call(baseUrl, '/api/newsletter/confirm', { body: { token } }) : null;
     if (token) {
       check(
         6,
-        'Replaying the same link returns 400',
-        replay.status === 400 && replay.json?.code === 'token_invalid',
-        `status ${replay.status}`,
+        'Replaying the same link answers already-confirmed, not an error',
+        replay.status === 200 && replay.json?.ok === true && replay.json?.already === true,
+        `status ${replay.status}, already ${replay.json?.already}`,
       );
     } else {
-      skipCheck(6, 'Replaying the same link returns 400', 'no confirmation link captured');
+      skipCheck(6, 'Replaying the same link answers already-confirmed', 'no confirmation link captured');
     }
 
-    // 7. A confirmed address is left alone and nothing new is sent. Typed in
-    //    capitals, which must match the same row.
+    // 7. A confirmed address is left alone, says it is already subscribed, and
+    //    nothing new is sent. Typed in capitals, which must match the same row.
     const beforeRepeat = logged.length;
     const repeat = await call(baseUrl, '/api/newsletter/subscribe', {
       body: { email: EMAIL_A.toUpperCase() },
@@ -244,11 +250,12 @@ async function main() {
     const repeatLinks = linksSince(beforeRepeat);
     check(
       7,
-      'Signing up again for a confirmed address answers identically and sends nothing',
+      'Signing up again for a confirmed address says already subscribed and sends nothing',
       repeat.status === 200 &&
-        repeat.json?.message === GENERIC_MESSAGE &&
+        repeat.json?.already === true &&
+        repeat.json?.message !== GENERIC_MESSAGE &&
         repeatLinks.length === 0,
-      `status ${repeat.status}, ${repeatLinks.length} new link(s)`,
+      `status ${repeat.status}, already ${repeat.json?.already}, ${repeatLinks.length} new link(s)`,
     );
 
     if (sql) {
@@ -256,7 +263,7 @@ async function main() {
       check(
         8,
         'The confirmed row is untouched and there is exactly one row for that address',
-        rows.length === 1 && rows[0].status === 'confirmed' && rows[0].confirm_token_hash === null,
+        rows.length === 1 && rows[0].status === 'confirmed' && Boolean(rows[0].confirm_token_hash),
         `${rows.length} row(s), status ${rows[0]?.status}`,
       );
     } else {
@@ -338,6 +345,41 @@ async function main() {
       get.status === 405 && (get.response.headers.get('allow') ?? '').includes('POST'),
       `status ${get.status}, allow ${get.response.headers.get('allow')}`,
     );
+
+    // 13b. A rejected send is not dressed up as a link in the post. Resend
+    //      refuses example.com addresses outright (422), so the test address
+    //      is one it will take, and the failure is forced by breaking the key.
+    if (isLocal) {
+      // The forced failure: a fresh server whose Resend key is set (so it
+      // attempts a real send rather than logging) and a stubbed fetch that
+      // answers the provider's 422, the shape Resend returned when it refused
+      // example.com in production on 30 Sep. The second server is imported
+      // fresh so the email module reads the key set for this check.
+      const realFetch = globalThis.fetch;
+      globalThis.fetch = async () =>
+        new Response(
+          JSON.stringify({ name: 'validation_error', message: "Invalid 'to' field." }),
+          { status: 422, headers: { 'content-type': 'application/json' } },
+        );
+      process.env.RESEND_API_KEY = 're_test-forced-failure';
+      const server2 = await startApiServer({ quiet: true });
+      globalThis.fetch = realFetch;
+      const bounced = await call(server2.origin, '/api/newsletter/subscribe', {
+        body: { email: `${EMAIL_PREFIX}-bounce@example.com` },
+      });
+      await server2.close();
+      delete process.env.RESEND_API_KEY;
+      check(
+        13,
+        'A failed email send answers 503 with an honest message, not a promise of mail',
+        bounced.status === 503 &&
+          bounced.json?.code === 'email_send_failed' &&
+          !bounced.json?.message?.includes('confirmation link is on its way'),
+        `status ${bounced.status}, code ${bounced.json?.code}`,
+      );
+    } else {
+      skipCheck(13, 'A failed email send answers 503', 'only meaningful against a locally started server');
+    }
 
     // 14. Three signups an hour per address, then a 429 a client can back off from.
     const statuses = [];

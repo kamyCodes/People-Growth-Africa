@@ -239,6 +239,42 @@ async function main() {
       `${wrongPassword.status}/${unknownEmail.status}, "${wrongPassword.json?.error}"`,
     );
 
+    // 4b. A verification link clicked twice is told as success the second time:
+    //     the account was already verified, which is what the visitor wanted.
+    //     The "used or expired" error this replaced sent people chasing a resend
+    //     that never arrived (verified addresses get no resend at all).
+    const markVerify = logged.length;
+    const verifyEmail = `${EMAIL_PREFIX}-verify@example.com`;
+    await call(baseUrl, '/api/auth/signup', { body: talentBody(verifyEmail) });
+    const verifyToken =
+      linksSince(markVerify, /auth\/verify\?token=([A-Za-z0-9_-]+)/g).at(-1) ?? null;
+    if (verifyToken) {
+      const firstClick = await call(baseUrl, '/api/auth/verify-email', { body: { token: verifyToken } });
+      const secondClick = await call(baseUrl, '/api/auth/verify-email', { body: { token: verifyToken } });
+      const me = await call(baseUrl, '/api/auth/login', {
+        body: { email: verifyEmail, password: GOOD_PASSWORD },
+      });
+      const meIsVerified = me.cookie
+        ? (await call(baseUrl, '/api/auth/me', { method: 'GET', cookie: me.cookie })).json?.user?.emailVerified
+        : null;
+      check(
+        4.1,
+        'A verification link works once, and clicking it again answers already-confirmed',
+        firstClick.status === 200 &&
+          firstClick.json?.ok === true &&
+          secondClick.status === 200 &&
+          secondClick.json?.already === true &&
+          meIsVerified === true,
+        `first ${firstClick.status}, replay ${secondClick.status} (already ${secondClick.json?.already}), verified ${meIsVerified}`,
+      );
+    } else {
+      skipCheck(
+        4.1,
+        'A verification link works once, and clicking it again answers already-confirmed',
+        'no verification link captured; run locally where the link is printed',
+      );
+    }
+
     // 5. Any role other than talent or employer is refused.
     const admin = await call(baseUrl, '/api/auth/signup', {
       body: { ...talentBody(`${EMAIL_PREFIX}-admin@example.com`), role: 'admin' },

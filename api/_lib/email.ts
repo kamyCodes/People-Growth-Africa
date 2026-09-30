@@ -42,7 +42,7 @@ async function sendEmail(message: {
   replyTo?: string;
   /** Which flow sent this, so the logs name it. */
   tag?: string;
-}): Promise<void> {
+}): Promise<boolean> {
   const tag = message.tag ?? 'auth';
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
@@ -50,7 +50,7 @@ async function sendEmail(message: {
       console.error(
         `[${tag}] RESEND_API_KEY is not set, so this email was not sent: "${message.subject}"`,
       );
-      return;
+      return false;
     }
     // Only the text is printed: the HTML would bury the log, and the confirm
     // link the tests read out of it would appear three times over.
@@ -62,7 +62,9 @@ async function sendEmail(message: {
         message.text,
       ].join('\n'),
     );
-    return;
+    // The log stands in for the send locally and on preview, so the caller
+    // carrying on as if it worked is what keeps those flows testable.
+    return true;
   }
 
   try {
@@ -75,17 +77,20 @@ async function sendEmail(message: {
       ...(message.html ? { html: message.html } : {}),
       ...(message.replyTo ? { replyTo: message.replyTo } : {}),
     });
-    if (error) console.error(`[${tag}] email send failed`, error);
+    if (error) {
+      console.error(`[${tag}] email send failed`, error);
+      return false;
+    }
+    return true;
   } catch (error) {
-    // The account still exists and the user can request another link, so this
-    // must not throw into the request path.
     console.error(`[${tag}] email send threw`, error);
+    return false;
   }
 }
 
-export async function sendVerificationEmail(to: string, token: string): Promise<void> {
+export async function sendVerificationEmail(to: string, token: string): Promise<boolean> {
   const link = `${appUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
-  await sendEmail({
+  return sendEmail({
     to,
     subject: 'Confirm your People Growth Africa email address',
     text: [
@@ -114,9 +119,9 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
   });
 }
 
-export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
+export async function sendPasswordResetEmail(to: string, token: string): Promise<boolean> {
   const link = `${appUrl()}/forgot-password?token=${encodeURIComponent(token)}`;
-  await sendEmail({
+  return sendEmail({
     to,
     subject: 'Reset your People Growth Africa password',
     text: [
@@ -183,9 +188,9 @@ export async function sendLeadNotification(input: {
  * Double opt in: a newsletter signup only counts once the link in this message
  * is opened. Nothing else is ever sent to a pending address.
  */
-export async function sendNewsletterConfirmationEmail(to: string, token: string): Promise<void> {
+export async function sendNewsletterConfirmationEmail(to: string, token: string): Promise<boolean> {
   const link = `${appUrl()}/newsletter/confirm?token=${encodeURIComponent(token)}`;
-  await sendEmail({
+  return sendEmail({
     to,
     tag: 'newsletter',
     subject: 'Confirm your subscription to People Growth Africa insights',
@@ -219,8 +224,8 @@ export async function sendNewsletterConfirmationEmail(to: string, token: string)
  * Sent after a reset so an account holder finds out if someone else changed
  * their password. It deliberately carries no link.
  */
-export async function sendPasswordChangedEmail(to: string): Promise<void> {
-  await sendEmail({
+export async function sendPasswordChangedEmail(to: string): Promise<boolean> {
+  return sendEmail({
     to,
     subject: 'Your People Growth Africa password was changed',
     text: [

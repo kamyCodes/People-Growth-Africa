@@ -94,7 +94,7 @@ export default function BlogList() {
     setNewsletterState('sending');
     setNewsletterNotice('');
 
-    const result = await authRequest<{ ok: boolean; message?: string }>(
+    const result = await authRequest<{ ok: boolean; message?: string; already?: boolean }>(
       '/api/newsletter/subscribe',
       { body: { email } },
     );
@@ -104,7 +104,9 @@ export default function BlogList() {
       setNewsletterNotice(
         result.data.message ?? 'Check your inbox to confirm your subscription.',
       );
-      setNewsletterEmail('');
+      // An address that is already subscribed stays in the box: clearing it
+      // would suggest another email was sent to it.
+      if (result.data.already !== true) setNewsletterEmail('');
       return;
     }
 

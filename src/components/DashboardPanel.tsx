@@ -71,6 +71,12 @@ export default function DashboardPanel({
       '/api/auth/resend-verification',
       { body: {} },
     );
+
+    // The session may have moved on since this page loaded - the address can
+    // have been verified from the emailed link in another tab. Reading it back
+    // lets the "already confirmed" answer retire the banner instead of sitting
+    // under it.
+    await refresh();
     setResending(false);
 
     if (!result.ok) {

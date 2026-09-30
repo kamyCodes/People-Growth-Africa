@@ -101,6 +101,15 @@ export async function findSessionUserById(id: string): Promise<SessionUserRow | 
   );
 }
 
+/**
+ * The session-safe view of one account by id, for checks that need to know a
+ * fact about the account rather than act on it - whether an email was already
+ * verified, say - without ever reading the password hash.
+ */
+export async function findUserById(id: string): Promise<SessionUserRow | null> {
+  return findSessionUserById(id);
+}
+
 export async function deleteUser(id: string): Promise<void> {
   await query('DELETE FROM users WHERE id = $1', [id]);
 }
@@ -183,6 +192,22 @@ export async function consumeAuthToken(tokenHash: string, type: TokenType): Prom
     [tokenHash, type],
   );
   return row?.user_id ?? null;
+}
+
+/**
+ * The owner of a token that has already been redeemed. A link works once, but
+ * the person holding it deserves to be told "this was already done" rather
+ * than "expired", and only the stored hash is needed to recognise their link.
+ */
+export async function findSpentAuthToken(
+  tokenHash: string,
+  type: TokenType,
+): Promise<{ userId: string } | null> {
+  const row = await queryOne<{ user_id: string }>(
+    'SELECT user_id FROM auth_tokens WHERE token_hash = $1 AND type = $2 AND used_at IS NOT NULL',
+    [tokenHash, type],
+  );
+  return row ? { userId: row.user_id } : null;
 }
 
 export async function logAuthEvent(input: {
@@ -309,17 +334,44 @@ export async function upsertNewsletterSubscriber(input: {
 }
 
 /**
- * Turns a pending subscription into a confirmed one and clears the link it was
- * confirmed with. Single statement, so a link cannot be redeemed twice even if
- * two requests arrive at the same moment, and an expired link confirms nothing.
- * Returns the address it confirmed, or null when the link was spent or stale.
+ * The subscription a confirmation link belongs to, whatever its state. The link
+ * itself is never stored - only this hash - so answering a replayed link needs
+ * the hash to still be here after success.
+ */
+export async function findNewsletterSubscriberByTokenHash(
+  tokenHash: string,
+): Promise<{ email: string; status: NewsletterStatus } | null> {
+  return queryOne<{ email: string; status: NewsletterStatus }>(
+    'SELECT email, status FROM newsletter_subscribers WHERE confirm_token_hash = $1',
+    [tokenHash],
+  );
+}
+
+/**
+ * The state of one address, for telling a confirmed subscriber that they are
+ * already on the list instead of sending them into a confirmation loop.
+ */
+export async function findNewsletterSubscriberByEmail(
+  email: string,
+): Promise<{ status: NewsletterStatus } | null> {
+  return queryOne<{ status: NewsletterStatus }>(
+    'SELECT status FROM newsletter_subscribers WHERE email = $1',
+    [email],
+  );
+}
+
+/**
+ * Turns a pending subscription into a confirmed one. Single statement, so a
+ * link cannot be redeemed twice even if two requests arrive at the same moment,
+ * and an expired link confirms nothing. The link's hash is deliberately kept
+ * rather than cleared: it is one-way, and a row that still carries it is how a
+ * replayed link is answered with "already confirmed" instead of an error.
  */
 export async function confirmNewsletterSubscriber(tokenHash: string): Promise<string | null> {
   const row = await queryOne<{ email: string }>(
     `UPDATE newsletter_subscribers
         SET status = 'confirmed',
             confirmed_at = now(),
-            confirm_token_hash = NULL,
             confirm_expires_at = NULL
       WHERE confirm_token_hash = $1
         AND status = 'pending'

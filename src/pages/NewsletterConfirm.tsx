@@ -4,7 +4,10 @@ import { ContourPanel } from '../components/ContourPattern';
 import SEO from '../components/SEO';
 import { authRequest } from '../lib/authClient';
 
-type State = { status: 'working' } | { status: 'done' } | { status: 'failed'; message: string };
+type State =
+  | { status: 'working' }
+  | { status: 'done'; already?: boolean }
+  | { status: 'failed'; message: string };
 
 /**
  * Landing page for the double opt in link. It posts the token rather than
@@ -29,11 +32,16 @@ export default function NewsletterConfirm() {
     requested.current = true;
 
     void (async () => {
-      const result = await authRequest<{ ok: boolean }>('/api/newsletter/confirm', {
-        body: { token },
-      });
+      const result = await authRequest<{ ok: boolean; already?: boolean }>(
+        '/api/newsletter/confirm',
+        {
+          body: { token },
+        },
+      );
       setState(
-        result.ok ? { status: 'done' } : { status: 'failed', message: result.failure.error },
+        result.ok
+          ? { status: 'done', already: result.data.already === true }
+          : { status: 'failed', message: result.failure.error },
       );
     })();
   }, [token]);
@@ -50,7 +58,9 @@ export default function NewsletterConfirm() {
           <ContourPanel className="mb-8 px-6 py-7 md:px-8 md:py-9">
             <h1 className="font-[family-name:var(--font-heading)] text-2xl md:text-3xl font-semibold text-white mb-3">
               {view.status === 'done'
-                ? 'Your subscription is confirmed.'
+                ? view.already
+                  ? 'You are already subscribed.'
+                  : 'Your subscription is confirmed.'
                 : 'Confirming your subscription'}
             </h1>
 
@@ -62,7 +72,9 @@ export default function NewsletterConfirm() {
 
             {view.status === 'done' && (
               <p className="font-[family-name:var(--font-body)] text-white/80 leading-relaxed">
-                You are on the list. The next round of insights will arrive in your inbox.
+                {view.already
+                  ? 'This link was used before, and it worked: the address is on the list. The next round of insights will arrive in your inbox.'
+                  : 'You are on the list. The next round of insights will arrive in your inbox.'}
               </p>
             )}
 
