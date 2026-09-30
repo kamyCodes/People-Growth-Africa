@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ContourPanel } from '../components/ContourPattern';
+import Select from '../components/Select';
 import SEO from '../components/SEO';
 import { COUNTRIES, TALENT_FIELDS } from '../data/options';
 import { useAuth } from '../hooks/useAuth';
@@ -475,82 +476,50 @@ export default function Auth() {
                       ) : (
                         <>
                           <div className="mb-4">
-                            <label className={labelClass} htmlFor="auth-field">
-                              Field or main skill
-                            </label>
                             {/* A select rather than a free text box: the list is
                                 what the dashboard and any future matching would
                                 read, so it should not be a spelling lottery. */}
-                            <select
+                            <Select
                               id="auth-field"
                               name="field"
+                              label="Field or main skill"
+                              placeholder="Select your field or main skill"
+                              options={TALENT_FIELDS}
                               autoComplete="off"
+                              size="lg"
                               value={field}
-                              onChange={(event) => setField(event.target.value)}
-                              className={inputClass}
-                              aria-invalid={Boolean(fieldErrors.field)}
-                              aria-describedby={fieldErrors.field ? 'auth-field-error' : undefined}
-                            >
-                              <option value="">Select your field or main skill</option>
-                              {TALENT_FIELDS.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                            {fieldErrors.field && (
-                              <p id="auth-field-error" className={helpClass}>
-                                {fieldErrors.field}
-                              </p>
-                            )}
+                              onChange={setField}
+                              error={fieldErrors.field}
+                            />
                           </div>
 
                           <div className="mb-4">
-                            <label className={labelClass} htmlFor="auth-country">
-                              Country
-                            </label>
-                            <select
+                            <Select
                               id="auth-country"
                               name="country"
+                              label="Country"
+                              placeholder="Select your country"
+                              options={COUNTRIES}
                               autoComplete="country-name"
+                              size="lg"
                               value={country}
-                              onChange={(event) => setCountry(event.target.value)}
-                              className={inputClass}
-                              aria-invalid={Boolean(fieldErrors.country)}
-                              aria-describedby={fieldErrors.country ? 'auth-country-error' : undefined}
-                            >
-                              <option value="">Select your country</option>
-                              {COUNTRIES.map((option) => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                            {fieldErrors.country && (
-                              <p id="auth-country-error" className={helpClass}>
-                                {fieldErrors.country}
-                              </p>
-                            )}
+                              onChange={setCountry}
+                              error={fieldErrors.country}
+                              hint="Optional. It tells us where you are when we match you with roles."
+                            />
                           </div>
 
                           <div className="mb-4">
-                            <label className={labelClass} htmlFor="auth-availability">
-                              Availability
-                            </label>
-                            <select
+                            <Select
                               id="auth-availability"
                               name="availability"
+                              label="Availability"
+                              placeholder="Select availability"
+                              options={AVAILABILITY_OPTIONS}
+                              size="lg"
                               value={availability}
-                              onChange={(event) => setAvailability(event.target.value)}
-                              className={inputClass}
-                            >
-                              <option value="">Select availability</option>
-                              {AVAILABILITY_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
+                              onChange={setAvailability}
+                            />
                           </div>
                         </>
                       )}

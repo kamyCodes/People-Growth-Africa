@@ -1,5 +1,6 @@
 import { useState, useEffect, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Select from './Select';
 import { useConsultation } from '../hooks/useConsultation';
 import {
   leadFailureMessage,
@@ -559,43 +560,27 @@ export default function ConsultationModal() {
                       </div>
 
                       <div>
-                        <label htmlFor={`${formId}-teamSize`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                          Team size
-                        </label>
-                        <select
+                        <Select
                           id={`${formId}-teamSize`}
+                          name="teamSize"
+                          label="Team size"
+                          options={teamSizeOptions}
                           value={formData.teamSize}
-                          onChange={(e) =>
-                            setFormData({ ...formData, teamSize: e.target.value })
-                          }
-                          className="w-full px-3.5 py-2.5 rounded-[10px] border border-charcoal/20 bg-cream/20 text-charcoal text-xs md:text-sm focus:outline-none focus:border-brand-green focus:bg-white transition-all"
-                        >
-                          {teamSizeOptions.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => setFormData({ ...formData, teamSize: value })}
+                          size="sm"
+                        />
                       </div>
 
                       <div>
-                        <label htmlFor={`${formId}-service`} className="block text-xs font-semibold text-charcoal/70 mb-1">
-                          What you need help with
-                        </label>
-                        <select
+                        <Select
                           id={`${formId}-service`}
+                          name="service"
+                          label="What you need help with"
+                          options={serviceOptions}
                           value={formData.service}
-                          onChange={(e) =>
-                            setFormData({ ...formData, service: e.target.value })
-                          }
-                          className="w-full px-3.5 py-2.5 rounded-[10px] border border-charcoal/20 bg-cream/20 text-charcoal text-xs md:text-sm focus:outline-none focus:border-brand-green focus:bg-white transition-all"
-                        >
-                          {serviceOptions.map((opt) => (
-                            <option key={opt} value={opt}>
-                              {opt}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(value) => setFormData({ ...formData, service: value })}
+                          size="sm"
+                        />
                       </div>
                     </div>
 

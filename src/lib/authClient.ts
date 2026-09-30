@@ -67,6 +67,20 @@ export function needLabel(value: string): string {
   return NEED_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
+/**
+ * What a non JSON answer to a form submit means, in words the visitor can act
+ * on. Vercel's SPA rewrite serves index.html for any path that has no function
+ * behind it, and refuses to POST to that static file: a405 with an HTML body is
+ * how a deployment without its API answers a form, and blaming the connection
+ * for it sends people looking in the wrong place.
+ */
+function missingEndpointMessage(status: number): string {
+  if (status === 405) {
+    return 'Nothing was sent: this deployment has no endpoint for the form yet (the server answered 405). Try again after the next deploy.';
+  }
+  return 'Something went wrong. Try again in a moment.';
+}
+
 export async function authRequest<T>(
   path: string,
   init?: { method?: 'GET' | 'POST' | 'DELETE'; body?: unknown },
@@ -110,8 +124,8 @@ export async function authRequest<T>(
     return {
       ok: false,
       failure: {
-        error: failure.error ?? 'Something went wrong. Try again in a moment.',
-        code: failure.code ?? 'error',
+        error: failure.error ?? missingEndpointMessage(response.status),
+        code: failure.code ?? (response.status === 405 ? 'method_not_allowed' : 'error'),
         ...(failure.fields ? { fields: failure.fields } : {}),
       },
     };

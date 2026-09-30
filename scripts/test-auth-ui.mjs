@@ -570,11 +570,34 @@ async function main() {
       await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
       await page.getByRole('button', { name: 'Open menu' }).click();
       await menuPanel.waitFor({ state: 'visible', timeout: 5000 });
+      // The panel animates its height open, so measuring it the instant it is
+      // visible records whichever frame the machine happened to be on - 186px
+      // on a loaded one, against the ~300px it settles at. Wait for two readings
+      // a beat apart to agree. A stalled animation still fails the height check
+      // below, because a panel that never grows never agrees with itself at
+      // full height either.
+      await page
+        .waitForFunction(
+          () => {
+            const panel = document.querySelector('#mobile-menu');
+            if (!panel) return false;
+            const height = panel.getBoundingClientRect().height;
+            const now = performance.now();
+            const previous = window.__pgaMenuHeight;
+            window.__pgaMenuHeight = { height, now };
+            return (
+              Boolean(previous) &&
+              now - previous.now > 250 &&
+              Math.abs(previous.height - height) < 1
+            );
+          },
+          null,
+          { timeout: 8000, polling: 100 },
+        )
+        .catch(() => false);
       const closeBox = await menuPanel
         .getByRole('button', { name: 'Close menu' })
         .boundingBox();
-      // The panel animates its height open. Measuring it here also catches that
-      // animation stalling, which would leave an open menu one pixel tall.
       const panelBox = await menuPanel.boundingBox();
       check(
         19,
@@ -790,6 +813,44 @@ async function main() {
         missingPlaceholders.length
           ? `missing on ${missingPlaceholders.join(', ')}`
           : `${fieldsChecked} fields across ${formPages.length} pages`,
+      );
+
+      // --- 13. Client-side navigation cross-fades to the new page ------------
+      // The route table sits in a PageTransition keyed on the path, so the old
+      // page is deliberately still on screen for a moment after the click and
+      // the new one starts invisible. What must still hold is that a click
+      // arrives: the new page mounts, fades in, and the scroll starts at the
+      // top rather than wherever the visitor had left the previous page.
+      await page.setViewportSize({ width: 1280, height: 860 });
+      await page.goto(`${baseUrl}/`, { waitUntil: 'networkidle' });
+      await page.evaluate(() => window.scrollTo(0, 1400));
+      const scrollBefore = await page.evaluate(() => window.scrollY);
+
+      await page.getByRole('link', { name: 'Events', exact: true }).first().click();
+      await page.waitForURL('**/events', { timeout: 15000 });
+      const transitionSettled = await page
+        .waitForFunction(
+          () => {
+            const main = document.querySelector('main');
+            const first = main?.firstElementChild;
+            return (
+              Boolean(first) &&
+              getComputedStyle(first).opacity === '1' &&
+              window.scrollY === 0 &&
+              Boolean(document.querySelector('h1'))
+            );
+          },
+          null,
+          { timeout: 8000, polling: 100 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      const scrollAfter = await page.evaluate(() => window.scrollY);
+      check(
+        28,
+        'A nav click cross-fades to the new page and starts it at the top',
+        scrollBefore > 500 && transitionSettled && scrollAfter === 0,
+        `from ${Math.round(scrollBefore)}px, settled ${transitionSettled}, now ${scrollAfter}px`,
       );
     } finally {
       await browser.close().catch(() => {});

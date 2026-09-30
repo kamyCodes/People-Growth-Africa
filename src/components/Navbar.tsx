@@ -89,9 +89,11 @@ export default function Navbar() {
       const id = to.slice(2);
       if (location.pathname !== '/') {
         navigate('/');
+        // The new page mounts only after the outgoing one has faded
+        // (PageTransition), and scrolling before it exists does nothing.
         setTimeout(() => {
           document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-        }, 150);
+        }, 300);
       } else {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       }
