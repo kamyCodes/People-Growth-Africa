@@ -8,6 +8,9 @@ import { renderEmail, renderLeadEmail } from './email-template.js';
  * links themselves are only ever printed outside production, because a reset
  * link in a log is a reset link for anyone who can read the log.
  *
+ * The fallback sender must stay on the verified Resend sending domain
+ * (mail.peoplegrowthafrica.com) - the bare domain is not set up to send.
+ *
  * Every message carries both parts: the HTML in api/_lib/email-template.ts and
  * the plain text built here. The text is not a courtesy - it is what a
  * text-only client shows, it is what a spam filter reads, and it is the only
@@ -17,7 +20,7 @@ import { renderEmail, renderLeadEmail } from './email-template.js';
 const FROM_ADDRESS =
   process.env.EMAIL_FROM ??
   process.env.AUTH_EMAIL_FROM ??
-  'People Growth Africa <no-reply@peoplegrowthafrica.com>';
+  'People Growth Africa <noreply@mail.peoplegrowthafrica.com>';
 
 const IS_PRODUCTION = process.env.VERCEL_ENV === 'production';
 
