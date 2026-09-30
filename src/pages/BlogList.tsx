@@ -158,12 +158,13 @@ export default function BlogList() {
       {/* ── Category Filters ──────────────────────────── */}
       <section className="pt-12 bg-white">
         <div className="max-w-[1200px] mx-auto px-6">
-          <AnimateOnScroll className="flex flex-wrap justify-center gap-3">
+          {/* One row you flick through on a phone; the centered wrap returns at md. */}
+          <AnimateOnScroll className="flex flex-nowrap md:flex-wrap justify-start md:justify-center gap-3 overflow-x-auto md:overflow-visible scrollbar-none [&::-webkit-scrollbar]:hidden -mx-6 px-6 md:mx-0 md:px-0">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => { setActiveCategory(cat.id); setVisibleCount(POSTS_PER_PAGE); setTimeout(() => { document.getElementById('blog-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100); }}
-                className={`inline-flex items-center px-6 py-2.5 rounded-full border-[1.5px] font-[family-name:var(--font-body)] text-[0.88rem] font-medium cursor-pointer transition-all duration-300 whitespace-nowrap ${
+                className={`inline-flex shrink-0 items-center px-6 py-2.5 rounded-full border-[1.5px] font-[family-name:var(--font-body)] text-[0.88rem] font-medium cursor-pointer transition-all duration-300 whitespace-nowrap ${
                   activeCategory === cat.id
                     ? 'bg-deep-green border-deep-green text-white'
                     : 'bg-transparent border-charcoal/12 text-charcoal/65 hover:border-brand-green hover:text-brand-green'

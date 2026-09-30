@@ -87,13 +87,13 @@ export default function Events() {
         <div className="max-w-[1200px] mx-auto px-6">
           {/* Controls Bar: Category Filters & Search */}
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-10 pb-6 border-b border-charcoal/10">
-            {/* Category Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Category Filter Pills - one flickable row on a phone, wrapping from md up */}
+            <div className="flex flex-nowrap md:flex-wrap items-center gap-2 w-full md:w-auto overflow-x-auto md:overflow-visible scrollbar-none [&::-webkit-scrollbar]:hidden -mx-6 px-6 md:mx-0 md:px-0">
               {eventCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  className={`shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                     selectedCategory === cat.id
                       ? 'bg-deep-green text-white shadow-sm'
                       : 'bg-white text-charcoal/70 hover:text-charcoal hover:bg-cream border border-charcoal/10'
