@@ -1,10 +1,10 @@
-import { clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http.js';
-import { forgotPasswordSchema, parseInput } from '../_lib/validation.js';
-import { findUserByEmail } from '../_lib/db.js';
-import { issueToken } from '../_lib/auth-tokens.js';
-import { sendPasswordResetEmail } from '../_lib/email.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { clientIp, endpoint, parseJsonBody, sendJson } from '../../http.js';
+import { forgotPasswordSchema, parseInput } from '../../validation.js';
+import { findUserByEmail } from '../../db.js';
+import { issueToken } from '../../auth-tokens.js';
+import { sendPasswordResetEmail } from '../../email.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 export default endpoint({ methods: ['POST'], csrf: true }, async (req, res) => {
   const ip = clientIp(req);

@@ -433,6 +433,17 @@ async function main() {
       deleteWrongPassword.status === 401,
       `status ${deleteWrongPassword.status}`,
     );
+
+    // Every route answers through one catch-all function, so a path with no
+    // handler has to say so in JSON. Falling through to the SPA rewrite would
+    // hand back the home page with a 200 and hide a typo in a client call.
+    const unknown = await call(baseUrl, '/api/auth/nonexistent', { method: 'GET' });
+    check(
+      16,
+      'An unknown API path answers with a JSON 404, not the SPA page',
+      unknown.status === 404 && unknown.json?.code === 'not_found',
+      `status ${unknown.status}, code ${unknown.json?.code ?? 'none'}`,
+    );
   } finally {
     console.warn = originalWarn;
     if (isLocal) await cleanupLocal();

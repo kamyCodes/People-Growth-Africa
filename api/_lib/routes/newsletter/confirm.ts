@@ -1,9 +1,9 @@
-import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http.js';
-import { newsletterConfirmSchema, parseInput } from '../_lib/validation.js';
-import { confirmNewsletterSubscriber } from '../_lib/db.js';
-import { hashToken } from '../_lib/security.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../../http.js';
+import { newsletterConfirmSchema, parseInput } from '../../validation.js';
+import { confirmNewsletterSubscriber } from '../../db.js';
+import { hashToken } from '../../security.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 export default endpoint({ methods: ['POST'], csrf: true }, async (req, res) => {
   const ip = clientIp(req);

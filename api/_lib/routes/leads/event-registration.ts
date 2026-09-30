@@ -1,9 +1,9 @@
-import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http.js';
-import { eventRegistrationSchema, parseInput } from '../_lib/validation.js';
-import { insertEventRegistration } from '../_lib/db.js';
-import { appUrl, sendLeadNotification } from '../_lib/email.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../../http.js';
+import { eventRegistrationSchema, parseInput } from '../../validation.js';
+import { insertEventRegistration } from '../../db.js';
+import { appUrl, sendLeadNotification } from '../../email.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 /**
  * An event registration is stored first and the team is told about it second.

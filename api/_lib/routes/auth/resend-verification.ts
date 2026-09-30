@@ -1,10 +1,10 @@
-import { clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http.js';
-import { emptyBodySchema, parseInput } from '../_lib/validation.js';
-import { requireSession } from '../_lib/current-user.js';
-import { issueToken } from '../_lib/auth-tokens.js';
-import { sendVerificationEmail } from '../_lib/email.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { clientIp, endpoint, parseJsonBody, sendJson } from '../../http.js';
+import { emptyBodySchema, parseInput } from '../../validation.js';
+import { requireSession } from '../../current-user.js';
+import { issueToken } from '../../auth-tokens.js';
+import { sendVerificationEmail } from '../../email.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 /**
  * Sends a fresh confirmation link to the signed in user. Rate limited per

@@ -1,12 +1,12 @@
-import { ApiError, clientIp, endpoint, parseJsonBody, safeRedirect, sendJson } from '../_lib/http.js';
-import { parseInput, resetPasswordSchema } from '../_lib/validation.js';
-import { findSessionUserById, setPassword } from '../_lib/db.js';
-import { hashPassword, hashToken, isPasswordBreached } from '../_lib/security.js';
-import { redeemToken } from '../_lib/auth-tokens.js';
-import { clearSessionCookie } from '../_lib/session.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
-import { sendPasswordChangedEmail } from '../_lib/email.js';
+import { ApiError, clientIp, endpoint, parseJsonBody, safeRedirect, sendJson } from '../../http.js';
+import { parseInput, resetPasswordSchema } from '../../validation.js';
+import { findSessionUserById, setPassword } from '../../db.js';
+import { hashPassword, hashToken, isPasswordBreached } from '../../security.js';
+import { redeemToken } from '../../auth-tokens.js';
+import { clearSessionCookie } from '../../session.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
+import { sendPasswordChangedEmail } from '../../email.js';
 
 export default endpoint({ methods: ['POST'], csrf: true }, async (req, res) => {
   const ip = clientIp(req);

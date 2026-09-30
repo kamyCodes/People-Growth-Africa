@@ -16,8 +16,10 @@
  *      explicitly `*.js` (directory imports included);
  *   2. it strips the types out of api/ into a temporary directory the way the
  *      deployment does - one .js per .ts, same layout - and then imports every
- *      route module with plain Node ESM, no hooks and no transpiler in the way,
- *      so a bad specifier surfaces as the same ERR_MODULE_NOT_FOUND.
+ *      module in api/ with plain Node ESM, no hooks and no transpiler in the
+ *      way, so a bad specifier surfaces as the same ERR_MODULE_NOT_FOUND. The
+ *      endpoints, which are the files the platform exposes, also have to hand
+ *      back a callable default export; shared code under api/_lib need not.
  *
  * Nothing here connects anywhere, so the placeholder values it fills in are
  * only there to get past the import-time configuration checks.
@@ -123,11 +125,11 @@ export async function checkApiImports({ quiet = false, keepBuild = false } = {})
 
     writeCompiled(files);
 
-    for (const relative of files.filter(isRoute)) {
+    for (const relative of files) {
       const compiled = pathToFileURL(path.join(buildDir, relative.replace(/\.ts$/, '.js'))).href;
       try {
         const module = await import(compiled);
-        if (typeof module.default !== 'function') {
+        if (isRoute(relative) && typeof module.default !== 'function') {
           throw new Error('the route has no default export to call');
         }
         routes.push({ route: relative, ok: true });
@@ -143,7 +145,7 @@ export async function checkApiImports({ quiet = false, keepBuild = false } = {})
     if (keepBuild) {
       if (!quiet) {
         console.log(
-          `\nCompiled api/ left in ${path.relative(root, buildDir).split(path.sep).join('/')}, so any route can be imported directly:\n  node --input-type=module -e "import('./${path.relative(root, buildDir).split(path.sep).join('/')}/api/auth/signup.js')"\n`,
+          `\nCompiled api/ left in ${path.relative(root, buildDir).split(path.sep).join('/')}, so any module can be imported directly:\n  node --input-type=module -e "import('./${path.relative(root, buildDir).split(path.sep).join('/')}/api/[...path].js')"\n`,
         );
       }
     } else {
@@ -152,13 +154,16 @@ export async function checkApiImports({ quiet = false, keepBuild = false } = {})
   }
 
   const failedRoutes = routes.filter((entry) => !entry.ok);
+  const endpoints = routes.filter((entry) => isRoute(entry.route)).length;
   const ok = missing.length === 0 && failedRoutes.length === 0;
   const summary = ok
-    ? `${routes.length} routes import as native ESM, every relative specifier is explicit`
-    : `api/ import check failed: ${missing.length} specifier(s) without .js, ${failedRoutes.length} route(s) that do not import`;
+    ? `${routes.length} modules (${endpoints} endpoints) import as native ESM, every relative specifier is explicit`
+    : `api/ import check failed: ${missing.length} specifier(s) without .js, ${failedRoutes.length} module(s) that do not import`;
 
   if (!quiet) {
-    console.log(`api/ import check: ${files.length} files, ${routes.length} routes\n`);
+    console.log(
+      `api/ import check: ${files.length} files, ${routes.length} modules, ${endpoints} exposed\n`,
+    );
     for (const entry of missing) {
       console.log(
         `FAIL  ${entry.file}:${entry.line}  '${entry.specifier}' (${entry.hint})`,

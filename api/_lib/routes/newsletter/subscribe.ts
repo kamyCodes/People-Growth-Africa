@@ -1,10 +1,10 @@
-import { clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http.js';
-import { newsletterSubscribeSchema, parseInput } from '../_lib/validation.js';
-import { upsertNewsletterSubscriber } from '../_lib/db.js';
-import { hashToken, newToken } from '../_lib/security.js';
-import { sendNewsletterConfirmationEmail } from '../_lib/email.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { clientIp, endpoint, parseJsonBody, sendJson } from '../../http.js';
+import { newsletterSubscribeSchema, parseInput } from '../../validation.js';
+import { upsertNewsletterSubscriber } from '../../db.js';
+import { hashToken, newToken } from '../../security.js';
+import { sendNewsletterConfirmationEmail } from '../../email.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 /**
  * A signup stores the address as pending and mails a link; only opening that

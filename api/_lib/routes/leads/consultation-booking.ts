@@ -1,13 +1,13 @@
-import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../_lib/http.js';
+import { ApiError, clientIp, endpoint, parseJsonBody, sendJson } from '../../http.js';
 import {
   assertBookableDate,
   consultationBookingSchema,
   parseInput,
-} from '../_lib/validation.js';
-import { insertConsultationBooking } from '../_lib/db.js';
-import { sendLeadNotification } from '../_lib/email.js';
-import { enforceRateLimit } from '../_lib/ratelimit.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+} from '../../validation.js';
+import { insertConsultationBooking } from '../../db.js';
+import { sendLeadNotification } from '../../email.js';
+import { enforceRateLimit } from '../../ratelimit.js';
+import { recordAuthEvent } from '../../audit.js';
 
 /**
  * A booking request. Nothing here checks the team's diary, so the visitor is

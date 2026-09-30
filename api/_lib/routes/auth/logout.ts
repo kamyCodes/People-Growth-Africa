@@ -1,6 +1,6 @@
-import { clientIp, endpoint, sendJson } from '../_lib/http.js';
-import { clearSessionCookie, readSession } from '../_lib/session.js';
-import { recordAuthEvent } from '../_lib/audit.js';
+import { clientIp, endpoint, sendJson } from '../../http.js';
+import { clearSessionCookie, readSession } from '../../session.js';
+import { recordAuthEvent } from '../../audit.js';
 
 export default endpoint({ methods: ['POST'], csrf: true }, async (req, res) => {
   // Best effort: identify the user for the audit row, but logging out must
