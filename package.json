@@ -11,9 +11,12 @@
     "setup:auth": "node scripts/setup-auth.mjs",
     "serve:api": "node scripts/api-server.mjs",
     "test:auth": "node scripts/test-auth.mjs",
+    "test:auth:gate": "node scripts/test-auth-gate.mjs",
     "test:auth:ui": "node scripts/test-auth-ui.mjs",
     "test:newsletter": "node scripts/test-newsletter.mjs",
     "test:leads": "node scripts/test-leads.mjs",
+    "test:dashboard:rules": "node scripts/test-dashboard-rules.mjs",
+    "test:dashboard": "npm run test:dashboard:rules && node scripts/test-dashboard.mjs",
     "check:api": "node scripts/check-api-imports.mjs",
     "preview": "vite preview"
   },

@@ -10,6 +10,8 @@ import resendVerification from './auth/resend-verification.js';
 import resetPassword from './auth/reset-password.js';
 import signup from './auth/signup.js';
 import verifyEmail from './auth/verify-email.js';
+import employerConsultation from './employer/consultation.js';
+import talentProfile from './talent/profile.js';
 import consultationBooking from './leads/consultation-booking.js';
 import enquiry from './leads/enquiry.js';
 import eventRegistration from './leads/event-registration.js';
@@ -45,6 +47,8 @@ export const ROUTES: Record<string, RouteHandler> = {
   '/auth/reset-password': resetPassword,
   '/auth/signup': signup,
   '/auth/verify-email': verifyEmail,
+  '/employer/consultation': employerConsultation,
+  '/talent/profile': talentProfile,
   '/leads/consultation-booking': consultationBooking,
   '/leads/enquiry': enquiry,
   '/leads/event-registration': eventRegistration,
